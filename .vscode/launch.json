@@ -1,0 +1,26 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+	    {
+                "name": "Debug Chrome from Parcel",
+                "type": "chrome",
+                "request": "launch",
+                "webRoot": "${workspaceRoot}/src",
+                "url": "http://localhost:1234",
+                "port": 9222,
+                "userDataDir": "${workspaceRoot}/.vscode/chrome",
+                "trace": true,
+                "diagnosticLogging": true,
+                "breakOnLoad": true,
+                "smartStep": true,
+                "showAsyncStacks": true,
+                "skipFiles": [
+                    "node_modules/**"
+                ],
+                "sourceMaps": true,
+                "sourceMapPathOverrides": {
+                    "*": "${webRoot}/*"
+                },
+            }
+	]
+}

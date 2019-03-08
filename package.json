@@ -1,0 +1,11 @@
+{
+  "name": "boids-canvas2d",
+  "version": "1.0.0",
+  "description": "A simple exploration of the boids algoritme",
+  "main": "./src/index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "jklarenbeek@gmail.com",
+  "license": "ISC"
+}
