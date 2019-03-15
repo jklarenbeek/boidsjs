@@ -7,24 +7,22 @@ export default function createBoids(maxSize = 254, boidCount = 10) {
 
   maxSize = maxSize | 0;
   boidCount = Math.round(Math.min(maxSize, boidCount))|0;
-  const boidsX = new Int16Array(maxSize);
-  const boidsY = new Int16Array(maxSize);
+  const boidsX = new Int32Array(maxSize);
+  const boidsY = new Int32Array(maxSize);
   // const boidsZ = new Int8Array(maxSize);
-  const boidsVX = new Int16Array(maxSize);
-  const boidsVY = new Int16Array(maxSize);
+  const boidsVX = new Int32Array(maxSize);
+  const boidsVY = new Int32Array(maxSize);
 
-  const default_vec2 = new Int16Array(2);
+  const default_vec2 = new Int32Array(2);
   function separate(isrc, idst, v = default_vec2) {
-    v[0] = 0; v[1] = 0;
-    // Will return true if boid isrc is too close to boid idst
-    const dx = (boidsX[isrc] - boidsX[idst])|0;
-    const dy = (boidsY[isrc] - boidsY[idst])|0;
+    v[0] = (boidsX[isrc] - boidsX[idst])|0;
+    v[1] = (boidsY[isrc] - boidsY[idst])|0;
 
     // Get hypotenuse of triangle
-    const d = Math.sqrt(dx * dx + dy * dy);
+    const d = Math.sqrt(v[0] * v[0] + v[1] * v[1]);
     if ((d < 40) && (d != 0)) { 
-      v[0] = dx/4;
-      v[1] = dy/4;
+      v[0] = v[0]/4;
+      v[1] = v[1]/4;
       return true;
     } else {
       return false;
@@ -34,7 +32,7 @@ export default function createBoids(maxSize = 254, boidCount = 10) {
     v[0] = 0; v[1] = 0;
     // not too close please!
     if (boidCount > 0) { // likely
-      const w = new Int16Array(2);
+      const w = new Int32Array(2);
       for (let iboid = 0; iboid < boidCount; ++iboid) {
         if (iboid !== isrc) {
           if (separate(isrc, iboid, w)) {
@@ -48,7 +46,7 @@ export default function createBoids(maxSize = 254, boidCount = 10) {
   }
   function cohesionRule(isrc = 0, v = default_vec2) {
     v[0] = 0; v[1] = 0;
-    // match position
+    // match velocity and direction
     if (boidCount > 0) { // likely
       for (let iboid = 0; iboid < boidCount; ++iboid) {
         if (iboid !== isrc) {
@@ -97,23 +95,34 @@ export default function createBoids(maxSize = 254, boidCount = 10) {
     }
     return false;
   }
+  function clampPosition(isrc = 0, vp = default_vec2, vs = default_vec2) {
+    vp[0] = boidsX[isrc];
+    vp[1] = boidsY[isrc];
+    vs[0] = boidsVX[isrc];
+    vs[1] = boidsVY[isrc];
+  }
   class BoidsImpl extends Boids {
     set count(value) { boidCount = value; }
     get count() { return boidCount; }
     processAll() {
-      const v1 = new Int16Array(2);
-      const v2 = new Int16Array(2);
-      const v3 = new Int16Array(2);
+      const v1 = new Int32Array(2);
+      const v2 = new Int32Array(2);
+      const v3 = new Int32Array(2);
       for (let isrc = 0; isrc < boidCount; ++isrc) {
-        cohesionRule(isrc, v3);
-        alignmentRule(isrc, v2);
-        separationRule(isrc, v1);
+        cohesionRule(isrc, v1); // go towards center of flock
+        alignmentRule(isrc, v2); // match velocity and direction
+        separationRule(isrc, v3); // dont hit each other
         boidsVX[isrc] = boidsVX[isrc] + v1[0] + v2[0] + v3[0];
         boidsVY[isrc] = boidsVY[isrc] + v1[1] + v2[1] + v3[1];
-        limitVelocity(isrc, v1);
+        limitVelocity(isrc, v1, 0.0); // dont over heat
         boidsVX[isrc] = v1[0];
         boidsVY[isrc] = v1[1];
-        boidsX[isrc] = boidsX[isrc] + boidsVX[isrc];
+        clampPosition(isrc, v1, v2); // cage it
+        boidsX[isrc] = v1[0]; // reset position 
+        boidsY[isrc] = v1[1]; 
+        boidsVX[isrc] = v2[0]; // reset velocity
+        boidsVY[isrc] = v2[1];
+        boidsX[isrc] = boidsX[isrc] + boidsVX[isrc]; // update position
         boidsY[isrc] = boidsY[isrc] + boidsVY[isrc];
       }
     }
