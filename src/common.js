@@ -50,7 +50,7 @@ export function distance1(dx = 70, dy = 90) {
 }
 
 const fastInvSqrt_typed_y = new Float32Array(1);
-const fastInvSqrt_typed_i = new Int32Array(y.buffer);
+const fastInvSqrt_typed_i = new Int32Array(fastInvSqrt_typed_y.buffer);
 export function fastInvSqrt_typed(n) {
   const n2 = n * 0.5;
   fastInvSqrt_typed_y[0] = n;
@@ -70,3 +70,6 @@ export function fibonacci(value) {
   return Math.round(firstHalf - secondHalf);
 }
 
+Math.clampInt = Math.clampInt || function Math_clampInt(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
