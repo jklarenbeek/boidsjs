@@ -5,7 +5,7 @@ export class Boids {
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = 2.0003;
 
-export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254) {
+export default function createBoids(viewport = {}, boidCount = 112, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
@@ -34,7 +34,7 @@ export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254
         let srcvx = boidsf[isrc + 2]; // speed x-axis
         let srcvy = boidsf[isrc + 3]; // speed y-axis
         let srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
-        const srcvwangle = 120 * (Math.PI / 180);
+        const srcvwangle = 270 * (Math.PI / 180);
         boidsf[isrc + 5] = srcx;
         boidsf[isrc + 6] = srcy;
         // let srcsqn = srcvx * srcvx + srcvy * srcvy;
@@ -54,7 +54,7 @@ export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254
         // cohesion
         let rule3x = 0.0;
         let rule3y = 0.0;
-
+        let rule3cnt = 0;
         
         // collision detection
         let rule4vx = 0.0;
@@ -119,6 +119,7 @@ export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254
                 // separate
                 rule1vx += (vx / (euc2d));
                 rule1vy += (vy / (euc2d));
+                rule1cnt++;
 
                 // alignment
                 rule2vx += (dstvx / (euc2d));
@@ -127,8 +128,7 @@ export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254
                 // cohesion
                 rule3x += dstx;
                 rule3y += dsty;
-
-                rule1cnt++;
+                rule3cnt++;
               }
             }
         
@@ -152,8 +152,8 @@ export default function createBoids(viewport = {}, boidCount = 64, maxSize = 254
             rule1vy = rule1vy / rule1cnt;
             rule2vx = rule2vx / rule1cnt;
             rule2vy = rule2vy / rule1cnt;
-            rule3x = ((rule3x / rule1cnt) - srcx) / 3.33;
-            rule3y = ((rule3y / rule1cnt) - srcy) / 3.33;
+            rule3x = ((rule3x / rule3cnt) - srcx) / 3.33;
+            rule3y = ((rule3y / rule3cnt) - srcy) / 3.33;
           }
           srcvx += (rule1vx + rule2vx + rule3x) / 127.3;
           srcvy += (rule1vy + rule2vy + rule3y) / 127.3;
