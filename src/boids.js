@@ -62,6 +62,11 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
         let rule4vy = 0.0;
         let rule4cnt = 0;
 
+        // aggrates
+        let accx = 0.0;
+        let accy = 0.0;
+        let accn = 0;
+
         for (let idst = 0; idst < boidCount * structSize; idst += structSize) {
           if (idst !== isrc) {
             const dstx = boidsf[idst];
@@ -156,9 +161,9 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
           srcvy /= 2;
         }
         else if (true) {
-          let accx = 0; //srcvx;
-          let accy = 0; //srcvy;
-          let accn = 1;
+          accx = 0; //srcvx;
+          accy = 0; //srcvy;
+          accn = 1;
           if (rule1cnt > 0) {
             // separate
             accx += (rule1vx / rule1cnt) / (Math.PI * 1.47);
@@ -173,14 +178,14 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
           }
           if (rule3cnt > 0) {
             // cohesion
-            accx += ((rule3x / rule3cnt) - srcx) / (Math.PI * 1.47);
-            accy += ((rule3y / rule3cnt) - srcy) / (Math.PI * 1.47);
+            accx += ((rule3x / rule3cnt) - srcx) / (Math.PI * 1.12);
+            accy += ((rule3y / rule3cnt) - srcy) / (Math.PI * 1.12);
             accn++;
           }
-          accx /= accn;
-          accy /= accn;
-          srcvx += accx / 64.3;
-          srcvy += accx / 64.3;
+          accx /= (accn * 112.3);
+          accy /= (accn * 112.3);
+          srcvx += accx;
+          srcvy += accy;
           //srcvx /= 2;
           //srcvy /= 2;
         }
@@ -232,7 +237,7 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
         boidsf[isrc + 3] = srcvy;
         boidsf[isrc + 4] = srcrad;
 
-        if (rule1cnt > 0) ctx.fillStyle = `rgb(${127 + parseInt(rule1vx)}, ${127 + parseInt(rule1vy)}, 0)`;
+        if (rule1cnt > 0) ctx.fillStyle = `rgb(${127 + parseInt(accx)}, ${127 + parseInt(accy)}, 0)`;
         else ctx.fillStyle = 'blue';
 
         ctx.save()
