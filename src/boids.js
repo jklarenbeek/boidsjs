@@ -3,7 +3,7 @@ export class Boids {
 }
 
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
-const CONST_DEFAULT_SPEED_LIMIT = 2.0003;
+const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
 
 export default function createBoids(viewport = {}, boidCount = 112, maxSize = 254) {
 
@@ -50,7 +50,8 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
         // alignment
         let rule2vx = 0.0;
         let rule2vy = 0.0;
-
+        let rule2cnt = 0;
+        
         // cohesion
         let rule3x = 0.0;
         let rule3y = 0.0;
@@ -117,21 +118,29 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
                 const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
 
                 // separate
-                rule1vx += (vx / (euc2d));
-                rule1vy += (vy / (euc2d));
+                rule1vx += vx;
+                rule1vy += vy;
                 rule1cnt++;
-
-                // alignment
-                rule2vx += (dstvx / (euc2d));
-                rule2vy += (dstvy / (euc2d));
 
                 // cohesion
                 rule3x += dstx;
                 rule3y += dsty;
                 rule3cnt++;
               }
+
+            // alignment
+            // TODO: add weights to its size.
+            rule2vx += (dstvx);
+            rule2vy += (dstvy);
+            rule2cnt++;
             }
         
+            // alignment
+            //rule2vx += (dstvx);
+            //rule2vy += (dstvy);
+            //rule2cnt++;
+
+
           }
         }
 
@@ -147,16 +156,31 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
           srcvy /= 2;
         }
         else if (true) {
+          let accx = 0; //srcvx;
+          let accy = 0; //srcvy;
+          let accn = 1;
           if (rule1cnt > 0) {
-            rule1vx = rule1vx / rule1cnt;
-            rule1vy = rule1vy / rule1cnt;
-            rule2vx = rule2vx / rule1cnt;
-            rule2vy = rule2vy / rule1cnt;
-            rule3x = ((rule3x / rule3cnt) - srcx) / 3.33;
-            rule3y = ((rule3y / rule3cnt) - srcy) / 3.33;
+            // separate
+            accx += (rule1vx / rule1cnt) / (Math.PI * 1.47);
+            accy += (rule1vy / rule1cnt) / (Math.PI * 1.47);
+            accn++;
           }
-          srcvx += (rule1vx + rule2vx + rule3x) / 127.3;
-          srcvy += (rule1vy + rule2vy + rule3y) / 127.3;
+          if (rule2cnt > 0) {
+            // alignment
+            accx += (rule2vx / rule2cnt) * Math.PI;
+            accy += (rule2vy / rule2cnt) * Math.PI;
+            accn++;
+          }
+          if (rule3cnt > 0) {
+            // cohesion
+            accx += ((rule3x / rule3cnt) - srcx) / (Math.PI * 1.47);
+            accy += ((rule3y / rule3cnt) - srcy) / (Math.PI * 1.47);
+            accn++;
+          }
+          accx /= accn;
+          accy /= accn;
+          srcvx += accx / 64.3;
+          srcvy += accx / 64.3;
           //srcvx /= 2;
           //srcvy /= 2;
         }
