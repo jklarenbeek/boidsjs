@@ -24,64 +24,81 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
 
   class BoidsImpl {
     paint(ctx, size, properties, args) {
-      
+      // the view angle of the boid looking forward.
+      const viewAngle = 270 * (Math.PI / 180);
+
+      // index to the other boids
+      let idst = 0;
+
+      // indexof and variables for the current boid
+      let isrc = 0;
+      let srcx = 0.0, srcy = 0.0, srcvx = 0.0, srcvy = 0.0, srcrad = 0.0;
+
+      // aggregated velocity for the separation rule
+      let rule1cnt = 0;
+      let rule1vx = 0.0, rule1vy = 0.0;
+
+      // aggregated velocity of the alignment rule
+      let rule2cnt = 0;
+      let rule2vx = 0.0, rule2vy = 0.0;
+
+      // median position of the cohesion rule
+      let rule3cnt = 0;
+      let rule3x = 0.0, rule3y = 0.0;
+
+      // direct collision velocity.
+      let rule4cnt = 0;
+      let rule4vx = 0.0, rule4vy = 0.0;
+
+      // aggregated velocities of all rules combined.
+      let rulescnt = 0;
+      let rulesvx = 0.0;
+      let rulesvy = 0.0;
+
+      // clean our canvas and iterate of all boids
       ctx.clearRect(0, 0, size.width, size.height);
       ctx.beginPath();
-      for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-        // load variables from array
-        let srcx = boidsf[isrc]; // x position
-        let srcy = boidsf[isrc + 1]; // y position
-        let srcvx = boidsf[isrc + 2]; // speed x-axis
-        let srcvy = boidsf[isrc + 3]; // speed y-axis
-        let srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
-        const srcvwangle = 270 * (Math.PI / 180);
-        boidsf[isrc + 5] = srcx;
-        boidsf[isrc + 6] = srcy;
-        // let srcsqn = srcvx * srcvx + srcvy * srcvy;
-        // let srcmagnitude = Math.pow(srcsqn, .5);
-        // let srcangle = Math.atan2(srcvy, srcvy);
+      for (isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
+        // load source boid variables from typed array
+        srcx = boidsf[isrc]; // x position
+        srcy = boidsf[isrc + 1]; // y position
+        srcvx = boidsf[isrc + 2]; // speed x-axis
+        srcvy = boidsf[isrc + 3]; // speed y-axis
+        srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
+
+        // reset separation rule
+        rule1cnt = 0; rule1vx = 0.0; rule1vy = 0.0;
+        // reset alignment rule
+        rule2cnt = 0; rule2vx = 0.0; rule2vy = 0.0;
+        // reset cohesion rule
+        rule3cnt = 0; rule3x = 0.0; rule3y = 0.0;
+        // reset collision detection rule
+        rule4cnt = 0; rule4vx = 0.0; rule4vy = 0.0;
+        // reset aggregated velocities
+        rulesvx = 0.0; rulesvy = 0.0; rulescnt = 0;
+
+        // get angle of source boid in radians
         const theta = +Math.atan2(srcvy, srcvx);
-
-        // separate
-        let rule1vx = 0.0;
-        let rule1vy = 0.0;
-        let rule1cnt = 0;
-
-        // alignment
-        let rule2vx = 0.0;
-        let rule2vy = 0.0;
-        let rule2cnt = 0;
-        
-        // cohesion
-        let rule3x = 0.0;
-        let rule3y = 0.0;
-        let rule3cnt = 0;
-        
-        // collision detection
-        let rule4vx = 0.0;
-        let rule4vy = 0.0;
-        let rule4cnt = 0;
-
-        // aggrates
-        let accx = 0.0;
-        let accy = 0.0;
-        let accn = 0;
-
-        for (let idst = 0; idst < boidCount * structSize; idst += structSize) {
+        // iterate through all other boids
+        for (idst = 0; idst < boidCount * structSize; idst += structSize) {
           if (idst !== isrc) {
+            // load the other boid variables
             const dstx = boidsf[idst];
             const dsty = boidsf[idst + 1];
             const dstvx = boidsf[idst + 2];
             const dstvy = boidsf[idst + 3];
             const dstrad = boidsf[idst + 4];
 
+            // calculate basic distance
             const ldmin = srcrad + dstrad;
             const ldx = dstx - srcx;
             const ldy = dsty - srcy;
             const euc2d = Math.sqrt(ldx * ldx + ldy * ldy);
+            const lux = ldx / euc2d;
+            const luy = ldy / euc2d;
 
             // we enter when we are at least within some distance.
-            if (euc2d < CONST_DEFAULT_BOID_RADIUS * 5) {
+            if (euc2d < ldmin * 3) {
               
               // collision detection
               if (euc2d < ldmin) { // TODO: mass and velocity is not correctly transfered.
@@ -107,24 +124,26 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
           
               const spa = Math.atan2(-spy, spx);
           
-              const spmin = (-srcvwangle) / 2; // -viewingAngle / 2
-              const spmax = (+srcvwangle) / 2; // +viewingAngle / 2
+              const spmin = (-viewAngle) / 2; // -viewingAngle / 2
+              const spmax = (+viewAngle) / 2; // +viewingAngle / 2
 
               // within view? apply flocking rules
               if (spa < spmax && spa > spmin) {
-                const angle = Math.atan2(ldy, ldx);
-                const tx = (Math.cos(angle) * ldmin * 1.0003);
-                const ty = (Math.sin(angle) * ldmin * 1.0003);
-                const sdx = (dstx - (srcx + tx));
-                const sdy = (dsty - (srcy + ty));
-                const ddx = (srcx - (dstx + tx));
-                const ddy = (srcy - (dsty + ty));
-                const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
-                const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
-
+                //const angle = Math.atan2(ldy, ldx);
+                //const tx = (Math.cos(angle) * ldmin * 1.0003);
+                //const ty = (Math.sin(angle) * ldmin * 1.0003);
+                //const sdx = (dstx - (srcx + tx));
+                //const sdy = (dsty - (srcy + ty));
+                //const ddx = (srcx - (dstx + tx));
+                //const ddy = (srcy - (dsty + ty));
+                //const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
+                //const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
+                const srcmag = Math.sqrt(srcvx * srcvx + srcvy * srcvy);
                 // separate
-                rule1vx += vx;
-                rule1vy += vy;
+                rule1vx += (srcvx / srcmag + (lux * -1)) / 2;
+                rule1vy += (srcvy / srcmag + (luy * -1)) / 2;
+                // rule1vx += +((srcvx + (+(srcx - dstx) / +euc2d)) / 2.0);
+                // rule1vy += +((srcvy + (+(srcy - dsty) / +euc2d)) / 2.0);
                 rule1cnt++;
 
                 // cohesion
@@ -133,11 +152,12 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
                 rule3cnt++;
               }
 
-            // alignment
-            // TODO: add weights to its size.
-            rule2vx += (dstvx);
-            rule2vy += (dstvy);
-            rule2cnt++;
+              // alignment
+              // TODO: add weights to its size.
+              const dstmag = Math.sqrt(dstvx * dstvx + dstvy * dstvy);
+              rule2vx += (dstvx / dstmag);
+              rule2vy += (dstvy / dstmag);
+              rule2cnt++;
             }
         
             // alignment
@@ -161,33 +181,37 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
           srcvy /= 2;
         }
         else if (true) {
-          accx = 0; //srcvx;
-          accy = 0; //srcvy;
-          accn = 1;
+          rulesvx = 0; //srcvx;
+          rulesvy = 0; //srcvy;
+          rulescnt = 1;
           if (rule1cnt > 0) {
             // separate
-            accx += (rule1vx / rule1cnt) / (Math.PI * 1.47);
-            accy += (rule1vy / rule1cnt) / (Math.PI * 1.47);
-            accn++;
+            rulesvx += (rule1vx / rule1cnt);
+            rulesvy += (rule1vy / rule1cnt);
+            rulescnt++;
           }
           if (rule2cnt > 0) {
             // alignment
-            accx += (rule2vx / rule2cnt) * Math.PI;
-            accy += (rule2vy / rule2cnt) * Math.PI;
-            accn++;
+            rulesvx += (rule2vx / rule2cnt);
+            rulesvy += (rule2vy / rule2cnt);
+            rulescnt++;
           }
           if (rule3cnt > 0) {
             // cohesion
-            accx += ((rule3x / rule3cnt) - srcx) / (Math.PI * 1.12);
-            accy += ((rule3y / rule3cnt) - srcy) / (Math.PI * 1.12);
-            accn++;
+            const vx = ((rule3x / rule3cnt) - srcx);
+            const vy = ((rule3y / rule3cnt) - srcy);
+            const cm = Math.sqrt(vx * vx + vy * vy);
+            rulesvx += (srcvx + (vx / (cm))) / Math.PI;
+            rulesvy += (srcvy + (vy / (cm))) / Math.PI;
+            rulescnt++;
           }
-          accx /= (accn * 112.3);
-          accy /= (accn * 112.3);
-          srcvx += accx;
-          srcvy += accy;
-          //srcvx /= 2;
-          //srcvy /= 2;
+          if (rulescnt > 0) {
+            rulesvx /= rulescnt;
+            rulesvy /= rulescnt;
+          }
+
+          srcvx += (rulesvx); // / (Math.PI * Math.PI));
+          srcvy += (rulesvy); // / (Math.PI * Math.PI));
         }
 
 
@@ -199,7 +223,7 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
         }
 
         // cage boid to outer rectangle
-        if (true) {
+        if (false) {
           if (srcvx < 0 && (srcx + srcvx) < srcrad) {
             srcvx = Math.abs(srcvx);
           }
@@ -237,7 +261,7 @@ export default function createBoids(viewport = {}, boidCount = 112, maxSize = 25
         boidsf[isrc + 3] = srcvy;
         boidsf[isrc + 4] = srcrad;
 
-        if (rule1cnt > 0) ctx.fillStyle = `rgb(${127 + parseInt(accx)}, ${127 + parseInt(accy)}, 0)`;
+        if (rule1cnt > 0) ctx.fillStyle = `rgb(${127 + parseInt(rulesvx)}, ${127 + parseInt(rulesvy)}, 0)`;
         else ctx.fillStyle = 'blue';
 
         ctx.save()
