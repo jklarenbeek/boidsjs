@@ -8,7 +8,7 @@ function Math_hypot(dx = 0.0, dy = 0.0) {
   return +Math.sqrt(+dx * +dx + +dy * +dy);
 }
 
-export default function createBoids(viewport = {}, boidCount = 212, maxSize = 254) {
+export default function createBoids(viewport = {}, boidCount = 252, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
@@ -111,8 +111,11 @@ export default function createBoids(viewport = {}, boidCount = 212, maxSize = 25
                 const ddy = (srcy - (dsty + ty));
                 const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
                 const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
-                rule4vx += vx;
-                rule4vy += vy;
+                const hyp = Math_hypot(vx, vy);
+                rule4vx += (vx / hyp) / Math.PI;
+                rule4vy += (vy / hyp) / Math.PI;
+                // rule4vx += (lux * -1) * 0.853;
+                // rule4vy += (luy * -1) * 0.853;
                 rule4cnt++;
                 //continue;
               }
@@ -184,24 +187,24 @@ export default function createBoids(viewport = {}, boidCount = 212, maxSize = 25
           rulescnt = 0;
           if (rule1cnt > 0) {
             // separate
-            //rulesvx += (rule1vx / rule1cnt);
-            //rulesvy += (rule1vy / rule1cnt);
-            //rulescnt++;
+            rulesvx += (rule1vx / rule1cnt);
+            rulesvy += (rule1vy / rule1cnt);
+            rulescnt++;
           }
           if (rule2cnt > 0) {
             // alignment
-            //rulesvx += (rule2vx / rule2cnt) * 0.13;
-            //rulesvy += (rule2vy / rule2cnt) * 0.13;
-            //rulescnt++;
+            rulesvx += (rule2vx / rule2cnt) * 0.13;
+            rulesvy += (rule2vy / rule2cnt) * 0.13;
+            rulescnt++;
           }
           if (rule3cnt > 0) {
             // cohesion
             const vx = ((rule3x / rule3cnt) - srcx);
             const vy = ((rule3y / rule3cnt) - srcy);
             const nm = Math_hypot(vx, vy);
-            //rulesvx += (srcvx + (vx / nm)) / Math.PI;
-            //rulesvy += (srcvy + (vy / nm)) / Math.PI;
-            //rulescnt++;
+            rulesvx += (srcvx + (vx / nm)) / Math.PI;
+            rulesvy += (srcvy + (vy / nm)) / Math.PI;
+            rulescnt++;
           }
           if (rule4cnt > 0) {
             // collision
@@ -224,8 +227,8 @@ export default function createBoids(viewport = {}, boidCount = 212, maxSize = 25
         // limit speed of boid
         const newmag = +Math_hypot(srcvx, srcvy);
         if (newmag > CONST_DEFAULT_SPEED_LIMIT) {
-          //srcvx = (srcvx / newmag) * CONST_DEFAULT_SPEED_LIMIT;
-          //srcvy = (srcvy / newmag) * CONST_DEFAULT_SPEED_LIMIT;
+          srcvx = (srcvx / newmag) * CONST_DEFAULT_SPEED_LIMIT;
+          srcvy = (srcvy / newmag) * CONST_DEFAULT_SPEED_LIMIT;
         }
 
         // cage boid to outer rectangle
