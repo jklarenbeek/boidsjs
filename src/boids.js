@@ -8,7 +8,7 @@ function Math_hypot(dx = 0.0, dy = 0.0) {
   return +Math.sqrt(+dx * +dx + +dy * +dy);
 }
 
-export default function createBoids(viewport = {}, boidCount = 252, maxSize = 254) {
+export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
@@ -16,20 +16,86 @@ export default function createBoids(viewport = {}, boidCount = 252, maxSize = 25
 
   // init boids randomly
   for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-    boidsf[isrc] = Math.random() * viewport.width;
-    boidsf[isrc + 1] = Math.random() * viewport.height;
-    boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI*2) * CONST_DEFAULT_SPEED_LIMIT;
-    boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
-    boidsf[isrc + 4] = +Math.max(3, Math.abs(Math.sin(Math.random() * Math.PI * 2)) * CONST_DEFAULT_BOID_RADIUS);
+    // x-position
+    boidsf[isrc] = Math.random() * viewport.width; // srcx
+    // y-position
+    boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
+    // x-velocity
+    //boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    // y-velocity
+    //boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    // angle in unsigned radians
+    boidsf[isrc + 2] = (Math.random() * Math.PI * 2) - Math.PI;
+    // unsigned velocity/magnitude 
+    boidsf[isrc + 3] = Math.random() * CONST_DEFAULT_SPEED_LIMIT;
+    // unsigned radiusX or width
+    boidsf[isrc + 4] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
     boidsf[isrc + 5] = 0;
     boidsf[isrc + 6] = 0;
   }
 
   class BoidsImpl {
-    draw(ctx, size) {
-
-    }
     paint(ctx, size, properties, args) {
+      // clean our canvas and iterate of all boids
+      ctx.clearRect(0, 0, size.width, size.height);
+      ctx.beginPath();
+      for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
+        const srcx = boidsf[isrc]; // x position
+        const srcy = boidsf[isrc + 1]; // y position
+        const srcangle = boidsf[isrc + 2]; // angle
+        const srcmag = boidsf[isrc + 3]; // magnitude
+        const srcradw = boidsf[isrc + 4]; // radius
+        const srcradh = srcradw / 2;
+
+        // iterate through other boids
+        for (let idst = 0; idst < boidCount * structSize; idst += structSize) {
+          if (idst !== isrc) {
+            // load the other boid variables
+            const dstx = boidsf[idst];
+            const dsty = boidsf[idst + 1];
+            const dstangle = boidsf[idst + 2];
+            const dstmag = boidsf[idst + 3];
+            const dstradw = boidsf[idst + 4];
+            const dstradh = dstradw / 2;
+
+            const distx = dstx - srcx;
+            const disty = dsty - srcy;
+            const distance = Math_hypot(distx, disty);
+            const minwidth = srcradw + dstradw;
+            const minheight = srcradh + dstradh;
+            const mindist = Math_hypot(minwidth, minheight);
+            if (distance < (mindist * Math.PI)) {
+
+            }
+          }
+        }
+
+        let newangle = srcangle;
+        let newmag = srcmag;
+
+        const srcvx = Math.cos(newangle) * newmag;
+        const srcvy = Math.sin(newangle) * newmag;
+        const newx = srcx + srcvx;
+        const newy = srcy + srcvy;
+
+        // save boid state
+        boidsf[isrc] = newx;
+        boidsf[isrc + 1] = newy;
+        boidsf[isrc + 2] = newangle;
+        boidsf[isrc + 3] = newmag;
+
+        // draw the boid
+        ctx.save();
+        ctx.translate(newx, newy);
+        ctx.rotate(newangle);
+        ctx.beginPath();
+        ctx.fillStyle = 'blue';
+        ctx.ellipse(0, 0, srcradw, srcradh, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    paint2(ctx, size, properties, args) {
       // the view angle of the boid looking forward.
       const viewAngle = 270 * (Math.PI / 180);
       const minViewAngle = (-viewAngle) / 2; // -viewingAngle / 2
@@ -112,10 +178,10 @@ export default function createBoids(viewport = {}, boidCount = 252, maxSize = 25
                 const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
                 const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
                 const hyp = Math_hypot(vx, vy);
-                rule4vx += (vx / hyp) / Math.PI;
-                rule4vy += (vy / hyp) / Math.PI;
-                // rule4vx += (lux * -1) * 0.853;
-                // rule4vy += (luy * -1) * 0.853;
+                //rule4vx += (vx / hyp) / Math.PI;
+                //rule4vy += (vy / hyp) / Math.PI;
+                rule4vx += (lux * -1) * 0.853;
+                rule4vy += (luy * -1) * 0.853;
                 rule4cnt++;
                 //continue;
               }
