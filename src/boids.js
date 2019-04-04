@@ -116,9 +116,9 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
               const nvy = +(nny + nty);
 
               // compute weights relative to distance
-              const reldist = (distance - mindist) / +Math_hypot() 
-              rule1vx += +(nvx);
-              rule1vy += +(nvy);
+              const reldist = +(1 / ((distance - mindist) + 1)); 
+              rule1vx += +(nvx * reldist);
+              rule1vy += +(nvy * reldist);
               rule1cnt++;
 
               //#endregion
