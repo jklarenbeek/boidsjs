@@ -8,64 +8,121 @@ function Math_hypot(dx = 0.0, dy = 0.0) {
   return +Math.sqrt(+dx * +dx + +dy * +dy);
 }
 
+function Math_dot(vx1 = 0.0, vy1 = 0.0, vx2 = 0.0, vy2 = 0.0) {
+  return +(+vx1 * +vx2 - +vy1 * +vy2);
+}
+
 export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
-  const boidsf = new Float64Array(maxSize * structSize); // boids.buffer);
+  const boidsfBuffer1 = new Float64Array(maxSize * structSize); // boids.buffer);
+  const boidsfBuffer2 = new Float64Array(maxSize * structSize); // boids.buffer);
+  // setup buffer selector
+  let isBuffer1 = true;
 
-  // init boids randomly
-  for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-    // x-position
-    boidsf[isrc] = Math.random() * viewport.width; // srcx
-    // y-position
-    boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
-    // x-velocity
-    //boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
-    // y-velocity
-    //boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
-    // angle in unsigned radians
-    boidsf[isrc + 2] = (Math.random() * Math.PI * 2) - Math.PI;
-    // unsigned velocity/magnitude 
-    boidsf[isrc + 3] = Math.random() * CONST_DEFAULT_SPEED_LIMIT;
-    // unsigned radiusX or width
-    boidsf[isrc + 4] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
-    boidsf[isrc + 5] = 0;
-    boidsf[isrc + 6] = 0;
+  function initBoidsf() {
+    // get current buffer
+    const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
+
+    // init boids randomly
+    for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
+      // x-position
+      boidsf[isrc] = Math.random() * viewport.width; // srcx
+      // y-position
+      boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
+      // x-velocity
+      boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+      // y-velocity
+      boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+      // angle in unsigned radians
+      boidsf[isrc + 4] = (Math.random() * Math.PI * 2) - Math.PI;
+      // unsigned radiusX or width
+      boidsf[isrc + 5] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
+      boidsf[isrc + 6] = 0;
+    }
   }
 
   class BoidsImpl {
     paint(ctx, size, properties, args) {
+      // get current buffer
+      const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
+
+      // init separation rule
+      let rule1vx = 0.0;
+      let rule1vy = 0.0;
+      let rule1cnt = 0;
+
       // clean our canvas and iterate of all boids
       ctx.clearRect(0, 0, size.width, size.height);
       ctx.beginPath();
       for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-        const srcx = boidsf[isrc]; // x position
-        const srcy = boidsf[isrc + 1]; // y position
-        const srcangle = boidsf[isrc + 2]; // angle
-        const srcmag = boidsf[isrc + 3]; // magnitude
-        const srcradw = boidsf[isrc + 4]; // radius
-        const srcradh = srcradw / 2;
+        const srcx = +boidsf[isrc]; // x position
+        const srcy = +boidsf[isrc + 1]; // y position
+        const srcvx = +boidsf[isrc + 2]; // x velocity
+        const srcvy = +boidsf[isrc + 3]; // y velocity
+        const srcangle = +boidsf[isrc + 4]; // angle (derived from vx/vy when mag > 0.0)
+        const srch = +boidsf[isrc + 5]; // height/radiusY
+        const srcw = +(srch / 2.0);  // width/radiusX
+        const srcm = +(srch * srcw) * 0.639; // mass
 
         // iterate through other boids
-        for (let idst = 0; idst < boidCount * structSize; idst += structSize) {
-          if (idst !== isrc) {
+        for (let ioth = 0; ioth < boidCount * structSize; ioth += structSize) {
+          if (ioth !== isrc) {
             // load the other boid variables
-            const dstx = boidsf[idst];
-            const dsty = boidsf[idst + 1];
-            const dstangle = boidsf[idst + 2];
-            const dstmag = boidsf[idst + 3];
-            const dstradw = boidsf[idst + 4];
-            const dstradh = dstradw / 2;
+            const othx = +boidsf[ioth];
+            const othy = +boidsf[ioth + 1];
+            const othvx = +boidsf[ioth + 2];
+            const othvy = +boidsf[ioth + 3];
+            const othangle = +boidsf[ioth + 4];
+            const othh = +boidsf[ioth + 5]; // height/radiusY
+            const othw = +(othh / 2.0); // width/radiusX
+            const othm = +(othh * othw) * 0.639; // mass
 
-            const distx = dstx - srcx;
-            const disty = dsty - srcy;
-            const distance = Math_hypot(distx, disty);
-            const minwidth = srcradw + dstradw;
-            const minheight = srcradh + dstradh;
-            const mindist = Math_hypot(minwidth, minheight);
-            if (distance < (mindist * Math.PI)) {
+            const distx = +(othx - srcx);
+            const disty = +(othy - srcy);
+            const distance = +Math_hypot(distx, disty);
 
+            const minwidth = +(srcw + othw);
+            const minheight = +(srch + othh);
+            const mindist = +Math_hypot(minwidth, minheight);
+            const maxdist = +(mindist * Math.PI);
+            if (distance < maxdist) {
+              
+              //#region RULE 1: Separation
+
+              // compute unit normal and tangent vectors
+              const unx = +(distx / distance); // unit normal vector x
+              const uny = +(disty / distance); // unit normal vector y
+              const utx = +(-uny); // unit tangent vector x
+              const uty = +(unx); // unit tangent vector y
+              
+              // compute scalar projection of velocities
+              const svn = +Math_dot(unx, uny, srcvx, srcvy);
+              const svt = +Math_dot(utx, uty, srcvx, srcvy);
+              const ovn = +Math_dot(unx, uny, othvx, othvy);
+              // const ovt = +Math_dot(utx, uty, othvx, othvy);
+
+              // compute new velocity using 1 dimension
+              const svp = +((svn * (srcm - othm) + 2.0 * othm * ovn) / (srcm + othm));
+              // const ovp = +((ovn * (othm - srcm) + 2.0 * srcm * svn) / (srcm + othm));
+              
+              // compute new normal and tangent velocity vectors
+              const nnx = +(svp * unx); // nnv = svp * unv
+              const nny = +(svp * uny);
+              const ntx = +(svt * utx); // ntv = svt * utv;
+              const nty = +(svt * uty);
+              const nvx = +(nnx + ntx); // nvv = nnv + ntv;
+              const nvy = +(nny + nty);
+
+              // compute weights relative to distance
+              const reldist = (distance - mindist) / +Math_hypot() 
+              rule1vx += +(nvx);
+              rule1vy += +(nvy);
+              rule1cnt++;
+
+              //#endregion
+              
             }
           }
         }
