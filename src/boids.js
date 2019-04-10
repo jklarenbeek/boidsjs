@@ -4,13 +4,6 @@ export class Boids {
 
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
-function Math_hypot(dx = 0.0, dy = 0.0) {
-  return +Math.sqrt(+dx * +dx + +dy * +dy);
-}
-
-function Math_dot(vx1 = 0.0, vy1 = 0.0, vx2 = 0.0, vy2 = 0.0) {
-  return +(+vx1 * +vx2 - +vy1 * +vy2);
-}
 
 export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
@@ -81,11 +74,11 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
 
             const distx = +(othx - srcx);
             const disty = +(othy - srcy);
-            const distance = +Math_hypot(distx, disty);
+            const distance = +Float_hypot(distx, disty);
 
             const minwidth = +(srcw + othw);
             const minheight = +(srch + othh);
-            const mindist = +Math_hypot(minwidth, minheight);
+            const mindist = +Float_hypot(minwidth, minheight);
             const maxdist = +(mindist * Math.PI);
             if (distance < maxdist) {
               
@@ -98,10 +91,10 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
               const uty = +(unx); // unit tangent vector y
               
               // compute scalar projection of velocities
-              const svn = +Math_dot(unx, uny, srcvx, srcvy);
-              const svt = +Math_dot(utx, uty, srcvx, srcvy);
-              const ovn = +Math_dot(unx, uny, othvx, othvy);
-              // const ovt = +Math_dot(utx, uty, othvx, othvy);
+              const svn = +Float_dot2x2(unx, uny, srcvx, srcvy);
+              const svt = +Float_dot2x2(utx, uty, srcvx, srcvy);
+              const ovn = +Float_dot2x2(unx, uny, othvx, othvy);
+              // const ovt = +Float_dot2x2(utx, uty, othvx, othvy);
 
               // compute new velocity using 1 dimension
               const svp = +((svn * (srcm - othm) + 2.0 * othm * ovn) / (srcm + othm));
@@ -116,7 +109,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
               const nvy = +(nny + nty);
 
               // compute weights relative to distance
-              const reldist = +(1 / ((distance - mindist) + 1)); 
+              const reldist = +(1.0 / (+Math.abs(distance - mindist) + 1.0)); 
               rule1vx += +(nvx * reldist);
               rule1vy += +(nvy * reldist);
               rule1cnt++;
@@ -187,7 +180,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
         // get angle of source boid in radians
         const srctheta = +Math.atan2(srcvy, srcvx);
-        const srcmag = +Math_hypot(srcvx, srcvy);
+        const srcmag = +Float_hypot(srcvx, srcvy);
 
         // reset separation rule
         rule1cnt = 0; rule1vx = 0.0; rule1vy = 0.0;
@@ -210,13 +203,13 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             const dstvy = boidsf[idst + 3];
             const dstrad = boidsf[idst + 4];
             const dsttheta = +Math.atan2(dstvy, dstvx);
-            const dstmag = +Math_hypot(dstvx, dstvy);
+            const dstmag = +Float_hypot(dstvx, dstvy);
 
             // calculate basic distance
             const ldmin = srcrad + dstrad;
             const ldx = dstx - srcx;
             const ldy = dsty - srcy;
-            const euc2d = +Math_hypot(ldx, ldy);
+            const euc2d = +Float_hypot(ldx, ldy);
             const lux = ldx / euc2d;
             const luy = ldy / euc2d;
 
@@ -234,7 +227,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
                 const ddy = (srcy - (dsty + ty));
                 const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
                 const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
-                const hyp = Math_hypot(vx, vy);
+                const hyp = Float_hypot(vx, vy);
                 //rule4vx += (vx / hyp) / Math.PI;
                 //rule4vy += (vy / hyp) / Math.PI;
                 rule4vx += (lux * -1) * 0.853;
@@ -271,7 +264,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
 
               // alignment
               // TODO: add weights to its size.
-              const dstmag = Math_hypot(dstvx, dstvy);
+              const dstmag = Float_hypot(dstvx, dstvy);
               rule2vx += (dstvx / dstmag);
               rule2vy += (dstvy / dstmag);
               rule2cnt++;
@@ -324,7 +317,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             // cohesion
             const vx = ((rule3x / rule3cnt) - srcx);
             const vy = ((rule3y / rule3cnt) - srcy);
-            const nm = Math_hypot(vx, vy);
+            const nm = Float_hypot(vx, vy);
             rulesvx += (srcvx + (vx / nm)) / Math.PI;
             rulesvy += (srcvy + (vy / nm)) / Math.PI;
             rulescnt++;
@@ -348,7 +341,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         //#region limit source boid
 
         // limit speed of boid
-        const newmag = +Math_hypot(srcvx, srcvy);
+        const newmag = +Float_hypot(srcvx, srcvy);
         if (newmag > CONST_DEFAULT_SPEED_LIMIT) {
           srcvx = (srcvx / newmag) * CONST_DEFAULT_SPEED_LIMIT;
           srcvy = (srcvy / newmag) * CONST_DEFAULT_SPEED_LIMIT;

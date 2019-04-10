@@ -1,14 +1,14 @@
 
-const fastSin_B = 1.2732395; // 4/pi
-const fastSin_C = -0.40528473; // -4 / (pi²)
-export function fastSin(value) {
+const fastSin_B = +(4.0 / Math.PI); // 1.2732395; // 4/pi
+const fastSin_C = +(4.0 / (Math.PI * Math.PI)); // -0.40528473; // -4 / (pi²)
+export function fastSin(value = 0.0) {
   // See  for graph and equations
   // https://www.desmos.com/calculator/8nkxlrmp7a
-  // logic explained here : http://devmaster.net/posts/9648/fast-and-accurate-sine-cosine			
-      
-  return (value > 0)
-    ? fastSin_B * value - fastSin_C * value * value
-    : fastSin_B * value + fastSin_C * value * value;
+  // logic explained here : http://devmaster.net/posts/9648/fast-and-accurate-sine-cosine	
+  // https://gist.github.com/geraldyeo/988116
+  return +((+value > 0.0)
+    ? +(+fastSin_B * +value - +fastSin_C * +value * +value)
+    : +(+fastSin_B * +value + +fastSin_C * +value * +value));
 }
 
 export function fastSin2(a) {
@@ -64,7 +64,8 @@ export function fastSqrt(value) {
 }
 
 const fibionacci_sqrtFive = Math.sqrt(5);
-export function fibonacci(value) {
+// https://gist.github.com/geraldyeo/988116export 
+function fibonacci(value) {
   let firstHalf = 1 / fibionacci_sqrtFive * Math.pow( ( ( 1 + fibionacci_sqrtFive ) / 2), value);
   let secondHalf = 1 / fibionacci_sqrtFive * Math.pow( ( (1 - fibionacci_sqrtFive ) / 2 ), value);
   return Math.round(firstHalf - secondHalf);
