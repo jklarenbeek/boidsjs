@@ -21,13 +21,38 @@ const float_PIh = Math.PI / 2; // 1.57079632
 const float_PI_A = 4 / Math.PI; // 1.27323954
 const float_PI_B = 4 / (Math.PI * Math.PI); // 0.405284735
 
+const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
+
+function initBoidsf(f64arr) {
+  // get current buffer
+  const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
+
+  // init boids randomly
+  for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
+    // x-position
+    boidsf[isrc] = Math.random() * viewport.width; // srcx
+    // y-position
+    boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
+    // x-velocity
+    boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    // y-velocity
+    boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    // angle in unsigned radians
+    boidsf[isrc + 4] = (Math.random() * Math.PI * 2) - Math.PI;
+    // unsigned radiusX or width
+    boidsf[isrc + 5] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
+    boidsf[isrc + 6] = 0;
+  }
+}
 
 function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
   const boidsfBuffer1 = new Float64Array(maxSize * structSize); // boids.buffer);
+
+  initBoidsf(boidsfBuffer1);
 
   class BoidsImpl {
     paint(ctx, size, properties, args) {
@@ -386,3 +411,4 @@ function main() {
 }
 
 main();
+//# sourceMappingURL=index.js.map
