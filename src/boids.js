@@ -1,4 +1,4 @@
-import { float_hypot } from 'futilsjs';
+import { float_sqrt, float_hypot2, float_dot } from 'futilsjs';
 
 export class Boids {
 }
@@ -6,12 +6,10 @@ export class Boids {
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
 
-function initBoidsf(f64arr) {
-  // get current buffer
-  const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
+function initBoidsf(boidsf, count, size, viewport) {
 
   // init boids randomly
-  for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
+  for (let isrc = 0; isrc < count * size; isrc += size) {
     // x-position
     boidsf[isrc] = Math.random() * viewport.width; // srcx
     // y-position
@@ -34,85 +32,104 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
   //const boids = new Int32Array(maxSize * structSize);
   const boidsfBuffer1 = new Float64Array(maxSize * structSize); // boids.buffer);
   const boidsfBuffer2 = new Float64Array(maxSize * structSize); // boids.buffer);
+
   // setup buffer selector
   let isBuffer1 = true;
 
-  initBoidsf(boidsfBuffer1);
+  initBoidsf(boidsfBuffer1, boidCount, structSize, viewport);
 
   class BoidsImpl {
-    paint(ctx, size, properties, args) {
-      // get current buffer
-      const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
+    processFrame(options, callback) {
+      // rollup optimization strangness fix
+      const buf1 = isBuffer1;
 
+      // get current buffer
+      const cboidsf = buf1 ? boidsfBuffer1 : boidsfBuffer2;
+      const nboidsf = buf1 ? boidsfBuffer2 : boidsfBuffer1;
+
+      // init flocking rules variable
+      let rulesvx = 0.0, rulesvy = 0.0, rulescnt = 0;
       // init separation rule
-      let rule1vx = 0.0;
-      let rule1vy = 0.0;
-      let rule1cnt = 0;
+      let rule1vx = 0.0, rule1vy = 0.0, rule1cnt = 0;
 
       // clean our canvas and iterate of all boids
-      ctx.clearRect(0, 0, size.width, size.height);
-      ctx.beginPath();
+      let srcx = 0.0, srcy = 0.0;
+      let srcvx = 0.0, srcvy = 0.0;
+      let srca = 0.0, srcm = 0.0;
+      let srcw = 0.0, srch = 0.0;
+
       for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-        const srcx = +boidsf[isrc]; // x position
-        const srcy = +boidsf[isrc + 1]; // y position
-        const srcvx = +boidsf[isrc + 2]; // x velocity
-        const srcvy = +boidsf[isrc + 3]; // y velocity
-        const srcangle = +boidsf[isrc + 4]; // angle (derived from vx/vy when mag > 0.0)
-        const srch = +boidsf[isrc + 5]; // height/radiusY
-        const srcw = +(srch / 2.0);  // width/radiusX
-        const srcm = +(srch * srcw) * 0.639; // mass
+        srcx = +cboidsf[isrc]; // x position
+        srcy = +cboidsf[isrc + 1]; // y position
+        srcvx = +cboidsf[isrc + 2]; // x velocity
+        srcvy = +cboidsf[isrc + 3]; // y velocity
+        srca = +cboidsf[isrc + 4]; // angle (derived from vx/vy when mag > 0.0)
+        srch = +cboidsf[isrc + 5]; // height/radiusY
+        srcw = +(srch / 2.0);  // width/radiusX
+        srcm = +(srch * srcw) * 0.639; // mass
+
+        rulesvx = rule1vx = 0.0;
+        rulesvy = rule1vy = 0.0; 
+        rulescnt = rule1cnt = 0;
 
         // iterate through other boids
         for (let ioth = 0; ioth < boidCount * structSize; ioth += structSize) {
           if (ioth !== isrc) {
             // load the other boid variables
-            const othx = +boidsf[ioth];
-            const othy = +boidsf[ioth + 1];
-            const othvx = +boidsf[ioth + 2];
-            const othvy = +boidsf[ioth + 3];
-            const othangle = +boidsf[ioth + 4];
-            const othh = +boidsf[ioth + 5]; // height/radiusY
+            const othx = +cboidsf[ioth];
+            const othy = +cboidsf[ioth + 1];
+            const othvx = +cboidsf[ioth + 2];
+            const othvy = +cboidsf[ioth + 3];
+            const otha = +cboidsf[ioth + 4];
+            const othh = +cboidsf[ioth + 5]; // height/radiusY
             const othw = +(othh / 2.0); // width/radiusX
             const othm = +(othh * othw) * 0.639; // mass
 
+            // compute distance from each other
             const distx = +(othx - srcx);
             const disty = +(othy - srcy);
-            const distance = +float_hypot(distx, disty);
+            const dist2 = +float_hypot2(distx, disty);
 
+            // compute minimum distance from each other
             const minwidth = +(srcw + othw);
             const minheight = +(srch + othh);
-            const mindist = +float_hypot(minwidth, minheight);
-            const maxdist = +(mindist * Math.PI);
-            if (distance < maxdist) {
+            const mindist2 = +float_hypot2(minwidth, minheight);
+
+            // define maximum distance for entering branch
+            const maxdist = +(mindist2 * Math.PI);
+            if (dist2 < mindist2) {
+              const distance = +float_sqrt(dist2);
+              const mindistance = +float_sqrt(mindist2);
               
               //#region RULE 1: Separation
 
-              // compute unit normal and tangent vectors
+              // compute unit vector normal and tangent vectors
               const unx = +(distx / distance); // unit normal vector x
               const uny = +(disty / distance); // unit normal vector y
+              // vec2f_rotn90
               const utx = +(-uny); // unit tangent vector x
               const uty = +(unx); // unit tangent vector y
               
               // compute scalar projection of velocities
-              const svn = +Float_dot2x2(unx, uny, srcvx, srcvy);
-              const svt = +Float_dot2x2(utx, uty, srcvx, srcvy);
-              const ovn = +Float_dot2x2(unx, uny, othvx, othvy);
-              // const ovt = +Float_dot2x2(utx, uty, othvx, othvy);
+              const svn = +float_dot(unx, uny, srcvx, srcvy);
+              const svt = +float_dot(utx, uty, srcvx, srcvy);
+              const ovn = +float_dot(unx, uny, othvx, othvy);
+              // const ovt = +float_dot(utx, uty, othvx, othvy);
 
               // compute new velocity using 1 dimension
               const svp = +((svn * (srcm - othm) + 2.0 * othm * ovn) / (srcm + othm));
               // const ovp = +((ovn * (othm - srcm) + 2.0 * srcm * svn) / (srcm + othm));
               
               // compute new normal and tangent velocity vectors
-              const nnx = +(svp * unx); // nnv = svp * unv
+              const nnx = +(svp * unx); // nnv = unv * svp
               const nny = +(svp * uny);
-              const ntx = +(svt * utx); // ntv = svt * utv;
+              const ntx = +(svt * utx); // ntv = utv * svt;
               const nty = +(svt * uty);
-              const nvx = +(nnx + ntx); // nvv = nnv + ntv;
+              const nvx = +(nnx + ntx); // nvv = ntv + nnv;
               const nvy = +(nny + nty);
 
               // compute weights relative to distance
-              const reldist = +(1.0 / (+Math.abs(distance - mindist) + 1.0)); 
+              const reldist = 1.0; // +(1.0 / (+Math.abs(distance - mindist) + 1.0)); 
               rule1vx += +(nvx * reldist);
               rule1vy += +(nvy * reldist);
               rule1cnt++;
@@ -123,30 +140,59 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
           }
         }
 
-        let newangle = srcangle;
-        let newmag = srcmag;
+        // compute separation rule
+        if (rule1cnt > 0) {
+          rulesvx += +(rule1vx / rule1cnt);
+          rulesvy += +(rule1vy / rule1cnt);
+          ++rulescnt;
+        }
+
+        // compute all rules and add it to the source velocity
+        if (rulescnt > 0) {
+          rulesvx /= rulescnt;
+          rulesvy /= rulescnt;
+          srcvx += rulesvx;
+          srcvy += rulesvy;
+        }
+
+        // cage the boid to the outer rectangle
+        if (true) {
+          if (srcvx < 0 && (srcx + srcvx) < srch) {
+            srcvx = +Math.abs(srcvx);
+          }
+          else if (srcvx > 0 && (options.width - (srcx + srcvx)) < srcw) {
+            srcvx = +(-(srcvx));
+          }
+          if (srcvy < 0 && (srcy + srcvy) < srch) {
+            srcvy = +Math.abs(srcvy);
+          }
+          else if (srcvy > 0 && (options.height - (srcy + srcvy)) < srch) {
+            srcvy = +(-(srcvy));
+          }
+        }
 
         //const srcvx = Math.cos(newangle) * newmag;
         //const srcvy = Math.sin(newangle) * newmag;
-        const newx = srcx + srcvx;
-        const newy = srcy + srcvy;
+
+        srcx += +srcvx;
+        srcy += +srcvy;
 
         // save boid state
-        boidsf[isrc] = newx;
-        boidsf[isrc + 1] = newy;
-        boidsf[isrc + 2] = newangle;
-        boidsf[isrc + 3] = newmag;
+        nboidsf[isrc] = srcx;
+        nboidsf[isrc + 1] = srcy;
+        nboidsf[isrc + 2] = srcvx;
+        nboidsf[isrc + 3] = srcvy;
+        nboidsf[isrc + 4] = srca;
+        nboidsf[isrc + 5] = srch;
 
         // draw the boid
-        ctx.save();
-        ctx.translate(newx, newy);
-        ctx.rotate(newangle);
-        ctx.beginPath();
-        ctx.fillStyle = 'blue';
-        ctx.ellipse(0, 0, srcradw, srcradh, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        callback(srcx, srcy, srch, srcw, +Math.atan(srcvx, srcvy));
       }
+
+      // we are done processing
+      // flip buffers (something funny with rollup...)
+      isBuffer1 = buf1 ? false : true;
+
     }
     paint2(ctx, size, properties, args) {
       // the view angle of the boid looking forward.

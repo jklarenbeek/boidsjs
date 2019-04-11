@@ -9,7 +9,27 @@ function main() {
     requestAnimationFrame(draw);
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    boids.paint(ctx, { width: canvas.clientWidth, height: canvas.clientHeight });
+    if (true) {
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+
+      boids.processFrame(
+        { width: canvas.clientWidth, height: canvas.clientHeight },
+        function draw(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(a);
+          ctx.beginPath();
+          ctx.fillStyle = 'blue';
+          ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      );
+    }
+    else
+      boids.paint(ctx, { width: canvas.clientWidth, height: canvas.clientHeight });
   });
 }
 

@@ -1,16 +1,18 @@
 {
-  "name": "boids-canvas2d",
+  "name": "boidsjs",
   "version": "1.0.0",
   "description": "A simple exploration of the boids algoritme",
-  "main": "./public/index.html",
+  "main": "./public/index.js",
+  "files": ["public"],
   "scripts": {
-    "start": "rollup -c -w",
-    "build": "rollup ./src/index.js -f esm -d dist"
+    "start": "rollup -cw",
+    "build": "rollup -c"
   },
   "author": "jklarenbeek@gmail.com",
   "license": "ISC",
   "devDependencies": {
-    "rollup-plugin-node-resolve": "^4.2.3"
+    "rollup-plugin-node-resolve": "^4.2.3",
+    "rollup-plugin-serve": "^1.0.1"
   },
   "dependencies": {}
 }

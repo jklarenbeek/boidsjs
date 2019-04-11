@@ -81,3 +81,5 @@ typings/
 
 # vscode chrome userdatadir for debugging
 .vscode/chrome/
+
+src/boids.1.js

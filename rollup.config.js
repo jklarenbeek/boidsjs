@@ -1,11 +1,19 @@
 import resolve from 'rollup-plugin-node-resolve';
+import serve from 'rollup-plugin-serve';
+
+import pkg from './package.json'
 
 export default {
   input: 'src/index.js',
   output: {
-    file: 'public/index.js',
+    file: pkg.main,
     format: 'esm',
     sourcemap: true,
   },
-  plugins: [ resolve() ],
+  plugins: [
+    resolve(),
+    serve({
+      contentBase: pkg.files,
+    })
+  ],
 }
