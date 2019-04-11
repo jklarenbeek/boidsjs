@@ -1,53 +1,38 @@
-import { float_hypot } from 'futilsjs';
+const int_MULTIPLIER = 10000;
 
-export class Boids {
+//#region trigonometry
+
+const int_PI = (Math.PI * int_MULTIPLIER)|0;
+const int_PI_A = ((4 / Math.PI) * int_MULTIPLIER)|0;
+const int_PI_B = ((4 / (Math.PI * Math.PI)) * int_MULTIPLIER)|0;
+
+const def_vec2i = Object.seal({ x: 0, y: 0 });
+const def_vec2f = Object.seal({ x: 0.0, y: 0.0 });
+const def_vec3f = Object.seal({ x: 0.0, y: 0.0, z: 0.0 });
+
+function float_hypot(dx = 0.0, dy = 0.0) {
+  return +Math.sqrt(+(+(+dx * +dx) + +(+dy * +dy)));
 }
 
-const CONST_DEFAULT_BOID_RADIUS = 21.5;
+//#region trigonometry
+
+const float_PIx2 = Math.PI * 2; // 6.28318531
+const float_PIh = Math.PI / 2; // 1.57079632
+const float_PI_A = 4 / Math.PI; // 1.27323954
+const float_PI_B = 4 / (Math.PI * Math.PI); // 0.405284735
+
 const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
 
-function initBoidsf(f64arr) {
-  // get current buffer
-  const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
-
-  // init boids randomly
-  for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
-    // x-position
-    boidsf[isrc] = Math.random() * viewport.width; // srcx
-    // y-position
-    boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
-    // x-velocity
-    boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
-    // y-velocity
-    boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
-    // angle in unsigned radians
-    boidsf[isrc + 4] = (Math.random() * Math.PI * 2) - Math.PI;
-    // unsigned radiusX or width
-    boidsf[isrc + 5] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
-    boidsf[isrc + 6] = 0;
-  }
-}
-
-export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
+function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
   const structSize = 7;
   //const boids = new Int32Array(maxSize * structSize);
   const boidsfBuffer1 = new Float64Array(maxSize * structSize); // boids.buffer);
-  const boidsfBuffer2 = new Float64Array(maxSize * structSize); // boids.buffer);
-  // setup buffer selector
-  let isBuffer1 = true;
-
-  initBoidsf(boidsfBuffer1);
 
   class BoidsImpl {
     paint(ctx, size, properties, args) {
       // get current buffer
-      const boidsf = isBuffer1 ? boidsfBuffer1 : boidsfBuffer2;
-
-      // init separation rule
-      let rule1vx = 0.0;
-      let rule1vy = 0.0;
-      let rule1cnt = 0;
+      const boidsf = boidsfBuffer1;
 
       // clean our canvas and iterate of all boids
       ctx.clearRect(0, 0, size.width, size.height);
@@ -60,7 +45,6 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         const srcangle = +boidsf[isrc + 4]; // angle (derived from vx/vy when mag > 0.0)
         const srch = +boidsf[isrc + 5]; // height/radiusY
         const srcw = +(srch / 2.0);  // width/radiusX
-        const srcm = +(srch * srcw) * 0.639; // mass
 
         // iterate through other boids
         for (let ioth = 0; ioth < boidCount * structSize; ioth += structSize) {
@@ -70,10 +54,8 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             const othy = +boidsf[ioth + 1];
             const othvx = +boidsf[ioth + 2];
             const othvy = +boidsf[ioth + 3];
-            const othangle = +boidsf[ioth + 4];
             const othh = +boidsf[ioth + 5]; // height/radiusY
             const othw = +(othh / 2.0); // width/radiusX
-            const othm = +(othh * othw) * 0.639; // mass
 
             const distx = +(othx - srcx);
             const disty = +(othy - srcy);
@@ -97,25 +79,6 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
               const svn = +Float_dot2x2(unx, uny, srcvx, srcvy);
               const svt = +Float_dot2x2(utx, uty, srcvx, srcvy);
               const ovn = +Float_dot2x2(unx, uny, othvx, othvy);
-              // const ovt = +Float_dot2x2(utx, uty, othvx, othvy);
-
-              // compute new velocity using 1 dimension
-              const svp = +((svn * (srcm - othm) + 2.0 * othm * ovn) / (srcm + othm));
-              // const ovp = +((ovn * (othm - srcm) + 2.0 * srcm * svn) / (srcm + othm));
-              
-              // compute new normal and tangent velocity vectors
-              const nnx = +(svp * unx); // nnv = svp * unv
-              const nny = +(svp * uny);
-              const ntx = +(svt * utx); // ntv = svt * utv;
-              const nty = +(svt * uty);
-              const nvx = +(nnx + ntx); // nvv = nnv + ntv;
-              const nvy = +(nny + nty);
-
-              // compute weights relative to distance
-              const reldist = +(1.0 / (+Math.abs(distance - mindist) + 1.0)); 
-              rule1vx += +(nvx * reldist);
-              rule1vy += +(nvy * reldist);
-              rule1cnt++;
 
               //#endregion
               
@@ -205,8 +168,6 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             const dstvx = boidsf[idst + 2];
             const dstvy = boidsf[idst + 3];
             const dstrad = boidsf[idst + 4];
-            const dsttheta = +Math.atan2(dstvy, dstvx);
-            const dstmag = +float_hypot(dstvx, dstvy);
 
             // calculate basic distance
             const ldmin = srcrad + dstrad;
@@ -221,16 +182,6 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
               
               // collision detection
               if (euc2d < ldmin) { // TODO: mass and velocity is not correctly transfered.
-                const angle = Math.atan2(ldy, ldx);
-                const tx = (Math.cos(angle) * ldmin * 1.0003);
-                const ty = (Math.sin(angle) * ldmin * 1.0003);
-                const sdx = (dstx - (srcx + tx));
-                const sdy = (dsty - (srcy + ty));
-                const ddx = (srcx - (dstx + tx));
-                const ddy = (srcy - (dsty + ty));
-                const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
-                const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
-                const hyp = float_hypot(vx, vy);
                 //rule4vx += (vx / hyp) / Math.PI;
                 //rule4vy += (vy / hyp) / Math.PI;
                 rule4vx += (lux * -1) * 0.853;
@@ -290,17 +241,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         //#endregion
 
         //#region aggregate rules
-        if (false && rule4cnt > 0) {
-          // collision
-          rule4vx = rule4vx / rule4cnt ;
-          rule4vy = rule4vy / rule4cnt;
-
-          srcvx += rule4vx;
-          srcvy += rule4vy;
-          srcvx /= 2;
-          srcvy /= 2;
-        }
-        else {
+        {
           rulesvx = 0; //srcvx;
           rulesvy = 0; //srcvy;
           rulescnt = 0;
@@ -351,7 +292,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         }
 
         // cage boid to outer rectangle
-        if (true) {
+        {
           if (srcvx < 0 && (srcx + srcvx) < srcrad) {
             srcvx = Math.abs(srcvx);
           }
@@ -363,20 +304,6 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
           }
           else if (srcvy > 0 && (size.height - (srcy + srcvy)) < srcrad) {
             srcvy = -(srcvy);
-          }
-        }
-        else {
-          if (srcx + srcvx < 0) {
-            srcx = size.width - (srcx - srcvx);
-          }
-          else if (srcx + srcvx > size.width) {
-            srcx = (srcx + srcvx) - size.width;
-          }
-          if (srcy + srcvy < 0) {
-            srcy = size.height - (srcy - srcvy);
-          }
-          else if (srcy + srcvy > size.height) {
-            srcy = (srcy + srcvy) - size.height;
           }
         }
 
@@ -400,9 +327,9 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         else if (rule3cnt > 0) ctx.fillStyle = `purple`;
         else ctx.fillStyle = 'blue';
 
-        ctx.save()
+        ctx.save();
 
-        ctx.translate(srcx, srcy)
+        ctx.translate(srcx, srcy);
         ctx.rotate(Math.atan2(srcvy, srcvx));
   
         ctx.beginPath();
@@ -444,3 +371,18 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
 
   return new BoidsImpl();
 }
+
+function main() {
+  const canvas = document.getElementById('boids-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const boids = createBoids({ width: canvas.clientWidth, height: canvas.clientHeight });
+  requestAnimationFrame(function draw(now) {
+    requestAnimationFrame(draw);
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    boids.paint(ctx, { width: canvas.clientWidth, height: canvas.clientHeight });
+  });
+}
+
+main();

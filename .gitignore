@@ -81,9 +81,3 @@ typings/
 
 # vscode chrome userdatadir for debugging
 .vscode/chrome/
-
-# build output directory
-dist/
-src/boids.1.js
-src/futilsjs
-src/futilsjs/

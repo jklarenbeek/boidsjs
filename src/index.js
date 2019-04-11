@@ -1,4 +1,3 @@
-import common from "./common";
 import createBoids from "./boids";
 
 function main() {
