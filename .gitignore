@@ -85,3 +85,5 @@ typings/
 # build output directory
 dist/
 src/boids.1.js
+src/futilsjs
+src/futilsjs/
