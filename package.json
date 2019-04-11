@@ -4,7 +4,8 @@
   "description": "A simple exploration of the boids algoritme",
   "main": "./src/index.html",
   "scripts": {
-    "start": "parcel ./src/index.html"
+    "start": "parcel ./src/index.html",
+    "build": "rollup ./src/index.js -f esm -d dist"
   },
   "author": "jklarenbeek@gmail.com",
   "license": "ISC"
