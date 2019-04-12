@@ -1,4 +1,4 @@
-import { float_sqrt, float_hypot2, float_dot } from 'futilsjs';
+import { float_sqrt, float_hypot2, float_dot, float_theta } from 'futilsjs';
 
 export class Boids {
 }
@@ -40,6 +40,10 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
 
   class BoidsImpl {
     processFrame(options, callback) {
+
+      const vpwidth = options.width|0;
+      const vpheight = options.height|0;
+      
       // rollup optimization strangness fix
       const buf1 = isBuffer1;
 
@@ -57,6 +61,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
       let srcvx = 0.0, srcvy = 0.0;
       let srca = 0.0, srcm = 0.0;
       let srcw = 0.0, srch = 0.0;
+      let color = 'blue';
 
       for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
         srcx = +cboidsf[isrc]; // x position
@@ -67,6 +72,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         srch = +cboidsf[isrc + 5]; // height/radiusY
         srcw = +(srch / 2.0);  // width/radiusX
         srcm = +(srch * srcw) * 0.639; // mass
+        color = 'blue';
 
         rulesvx = rule1vx = 0.0;
         rulesvy = rule1vy = 0.0; 
@@ -96,7 +102,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             const mindist2 = +float_hypot2(minwidth, minheight);
 
             // define maximum distance for entering branch
-            const maxdist = +(mindist2 * Math.PI);
+            const maxdist = +(+mindist2 + +(Math.PI * Math.PI));
             if (dist2 < mindist2) {
               const distance = +float_sqrt(dist2);
               const mindistance = +float_sqrt(mindist2);
@@ -151,22 +157,58 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         if (rulescnt > 0) {
           rulesvx /= rulescnt;
           rulesvy /= rulescnt;
-          srcvx += rulesvx;
-          srcvy += rulesvy;
+          // srcvx += rulesvx;
+          // srcvy += rulesvy;
         }
 
         // cage the boid to the outer rectangle
-        if (true) {
+        if (false) {
           if (srcvx < 0 && (srcx + srcvx) < srch) {
             srcvx = +Math.abs(srcvx);
           }
-          else if (srcvx > 0 && (options.width - (srcx + srcvx)) < srcw) {
+          else if (srcvx > 0 && (vpwidth - (srcx + srcvx)) < srcw) {
             srcvx = +(-(srcvx));
           }
           if (srcvy < 0 && (srcy + srcvy) < srch) {
             srcvy = +Math.abs(srcvy);
           }
-          else if (srcvy > 0 && (options.height - (srcy + srcvy)) < srch) {
+          else if (srcvy > 0 && (vpheight - (srcy + srcvy)) < srch) {
+            srcvy = +(-(srcvy));
+          }
+        }
+        else {
+          const maxx = +(+srch * +(Math.PI * Math.PI));
+          const newx = +(+srcx + +srcvx);
+          if (srcvx < 0) {
+            const rdistx = +(+maxx - +newx);
+            if (+rdistx > 0) {
+              const distx = +(maxx - rdistx);
+              if (+distx < +srch)
+                srcvx = +Math.abs(srcvx);
+              else {
+                color = 'red'
+                //const t = +(distx / maxx);
+                //srcvx = +((1.0 - t) * srcvx);
+                //srcvy = +(t * srcvy);
+              }
+            }
+          }
+          else if (srcvx > 0) {
+            const rdistx = +(newx - (vpwidth - maxx));
+            if (+rdistx > 0) {
+              const distx = +(maxx - rdistx);
+              if (+distx < +srch) {
+                srcvx = +(-(srcvx));
+              }
+              else {
+                color = 'red';
+              }
+            }
+          }
+          if (srcvy < 0 && (srcy + srcvy) < srch) {
+            srcvy = +Math.abs(srcvy);
+          }
+          else if (srcvy > 0 && (vpheight - (srcy + srcvy)) < srch) {
             srcvy = +(-(srcvy));
           }
         }
@@ -176,6 +218,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
 
         srcx += +srcvx;
         srcy += +srcvy;
+        srca = +float_theta(+srcvx, +srcvy); // +Math.atan2(srcvy, srcvx);
 
         // save boid state
         nboidsf[isrc] = srcx;
@@ -186,7 +229,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         nboidsf[isrc + 5] = srch;
 
         // draw the boid
-        callback(srcx, srcy, srch, srcw, +Math.atan(srcvx, srcvy));
+        callback(srcx, srcy, srch, srcw, srca, color);
       }
 
       // we are done processing

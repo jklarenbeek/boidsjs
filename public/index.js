@@ -10,35 +10,8 @@ const def_vec2i = Object.seal({ x: 0, y: 0 });
 const def_vec2f = Object.seal({ x: 0.0, y: 0.0 });
 const def_vec3f = Object.seal({ x: 0.0, y: 0.0, z: 0.0 });
 
-function float_sqrt(n = 0.0) {
-  n = +n;
-  return +Math.sqrt(+n);
-}
-
 function float_hypot2(dx = 0.0, dy = 0.0) {
   return +(+(+dx * +dx) + +(+dy * +dy));
-}
-
-/**
- * 
- * We can calculate the Dot Product of two vectors this way:
- * 
- *    a · b = |a| × |b| × cos(θ)
- * 
- * or in this implementation as:
- * 
- *    a · b = ax × bx + ay × by
- * 
- * When two vectors are at right angles to each other the dot product is zero.
- * 
- * @param {float} ax vector A x velocity 
- * @param {float} ay vector A y velocity
- * @param {float} bx vector B x velocity
- * @param {float} by vector B y velocity
- * @returns {float} scalar of the dot product
- */
-function float_dot(ax = 0.0, ay = 0.0, bx = 0.0, by = 0.0) {
-  return +(+(+ax * +bx) + +(+ay * +by));
 }
 
 //#region trigonometry
@@ -47,6 +20,36 @@ const float_PIx2 = Math.PI * 2; // 6.28318531
 const float_PIh = Math.PI / 2; // 1.57079632
 const float_PI_A = 4 / Math.PI; // 1.27323954
 const float_PI_B = 4 / (Math.PI * Math.PI); // 0.405284735
+
+function float_theta(x = 0.0, y = 0.0) {
+  return +Math.atan2(+y, +x);
+  /*
+    // alternative was faster, but not anymore.
+    // error < 0.005
+    y = +y;
+    x = +x;
+    if (x == 0.0) {
+      if (y > 0.0) return +(Math.PI / 2.0);
+      if (y == 0.0) return 0.0;
+      return +(-Math.PI / 2.0);
+    }
+
+    const z = +(y / x);
+    var atan = 0.0;
+    if (+Math.abs(z) < 1.0) {
+      atan = +(z / (1.0 + 0.28 * z * z));
+      if (x < 0.0) {
+        if (y < 0.0) return +(atan - Math.PI);
+        return +(atan + Math.PI);
+      }
+    }
+    else {
+      atan = +(Math.PI / 2.0 - z / (z * z + 0.28));
+      if (y < 0.0) return +(atan - Math.PI);
+    }
+    return +(atan);
+  */
+}
 
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
@@ -85,6 +88,10 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
   class BoidsImpl {
     processFrame(options, callback) {
+
+      const vpwidth = options.width|0;
+      const vpheight = options.height|0;
+      
       // rollup optimization strangness fix
       const buf1 = isBuffer1;
 
@@ -92,16 +99,12 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
       const cboidsf = buf1 ? boidsfBuffer1 : boidsfBuffer2;
       const nboidsf = buf1 ? boidsfBuffer2 : boidsfBuffer1;
 
-      // init flocking rules variable
-      let rulesvx = 0.0, rulesvy = 0.0, rulescnt = 0;
-      // init separation rule
-      let rule1vx = 0.0, rule1vy = 0.0, rule1cnt = 0;
-
       // clean our canvas and iterate of all boids
       let srcx = 0.0, srcy = 0.0;
       let srcvx = 0.0, srcvy = 0.0;
-      let srca = 0.0, srcm = 0.0;
+      let srca = 0.0;
       let srcw = 0.0, srch = 0.0;
+      let color = 'blue';
 
       for (let isrc = 0; isrc < boidCount * structSize; isrc += structSize) {
         srcx = +cboidsf[isrc]; // x position
@@ -111,28 +114,13 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         srca = +cboidsf[isrc + 4]; // angle (derived from vx/vy when mag > 0.0)
         srch = +cboidsf[isrc + 5]; // height/radiusY
         srcw = +(srch / 2.0);  // width/radiusX
-        srcm = +(srch * srcw) * 0.639; // mass
-
-        rulesvx = rule1vx = 0.0;
-        rulesvy = rule1vy = 0.0; 
-        rulescnt = rule1cnt = 0;
+        color = 'blue';
 
         // iterate through other boids
         for (let ioth = 0; ioth < boidCount * structSize; ioth += structSize) {
           if (ioth !== isrc) {
-            // load the other boid variables
-            const othx = +cboidsf[ioth];
-            const othy = +cboidsf[ioth + 1];
-            const othvx = +cboidsf[ioth + 2];
-            const othvy = +cboidsf[ioth + 3];
             const othh = +cboidsf[ioth + 5]; // height/radiusY
             const othw = +(othh / 2.0); // width/radiusX
-            const othm = +(othh * othw) * 0.639; // mass
-
-            // compute distance from each other
-            const distx = +(othx - srcx);
-            const disty = +(othy - srcy);
-            const dist2 = +float_hypot2(distx, disty);
 
             // compute minimum distance from each other
             const minwidth = +(srcw + othw);
@@ -140,77 +128,44 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
             const mindist2 = +float_hypot2(minwidth, minheight);
 
             // define maximum distance for entering branch
-            const maxdist = +(mindist2 * Math.PI);
-            if (dist2 < mindist2) {
-              const distance = +float_sqrt(dist2);
-              const mindistance = +float_sqrt(mindist2);
-              
-              //#region RULE 1: Separation
-
-              // compute unit vector normal and tangent vectors
-              const unx = +(distx / distance); // unit normal vector x
-              const uny = +(disty / distance); // unit normal vector y
-              // vec2f_rotn90
-              const utx = +(-uny); // unit tangent vector x
-              const uty = +(unx); // unit tangent vector y
-              
-              // compute scalar projection of velocities
-              const svn = +float_dot(unx, uny, srcvx, srcvy);
-              const svt = +float_dot(utx, uty, srcvx, srcvy);
-              const ovn = +float_dot(unx, uny, othvx, othvy);
-              // const ovt = +float_dot(utx, uty, othvx, othvy);
-
-              // compute new velocity using 1 dimension
-              const svp = +((svn * (srcm - othm) + 2.0 * othm * ovn) / (srcm + othm));
-              // const ovp = +((ovn * (othm - srcm) + 2.0 * srcm * svn) / (srcm + othm));
-              
-              // compute new normal and tangent velocity vectors
-              const nnx = +(svp * unx); // nnv = unv * svp
-              const nny = +(svp * uny);
-              const ntx = +(svt * utx); // ntv = utv * svt;
-              const nty = +(svt * uty);
-              const nvx = +(nnx + ntx); // nvv = ntv + nnv;
-              const nvy = +(nny + nty);
-
-              // compute weights relative to distance
-              const reldist = 1.0; // +(1.0 / (+Math.abs(distance - mindist) + 1.0)); 
-              rule1vx += +(nvx * reldist);
-              rule1vy += +(nvy * reldist);
-              rule1cnt++;
-
-              //#endregion
-              
-            }
+            const maxdist = +(+mindist2 + +(Math.PI * Math.PI));
           }
-        }
-
-        // compute separation rule
-        if (rule1cnt > 0) {
-          rulesvx += +(rule1vx / rule1cnt);
-          rulesvy += +(rule1vy / rule1cnt);
-          ++rulescnt;
-        }
-
-        // compute all rules and add it to the source velocity
-        if (rulescnt > 0) {
-          rulesvx /= rulescnt;
-          rulesvy /= rulescnt;
-          srcvx += rulesvx;
-          srcvy += rulesvy;
         }
 
         // cage the boid to the outer rectangle
         {
-          if (srcvx < 0 && (srcx + srcvx) < srch) {
-            srcvx = +Math.abs(srcvx);
+          const maxx = +(+srch * +(Math.PI * Math.PI));
+          const newx = +(+srcx + +srcvx);
+          if (srcvx < 0) {
+            const rdistx = +(+maxx - +newx);
+            if (+rdistx > 0) {
+              const distx = +(maxx - rdistx);
+              if (+distx < +srch)
+                srcvx = +Math.abs(srcvx);
+              else {
+                color = 'red';
+                //const t = +(distx / maxx);
+                //srcvx = +((1.0 - t) * srcvx);
+                //srcvy = +(t * srcvy);
+              }
+            }
           }
-          else if (srcvx > 0 && (options.width - (srcx + srcvx)) < srcw) {
-            srcvx = +(-(srcvx));
+          else if (srcvx > 0) {
+            const rdistx = +(newx - (vpwidth - maxx));
+            if (+rdistx > 0) {
+              const distx = +(maxx - rdistx);
+              if (+distx < +srch) {
+                srcvx = +(-(srcvx));
+              }
+              else {
+                color = 'red';
+              }
+            }
           }
           if (srcvy < 0 && (srcy + srcvy) < srch) {
             srcvy = +Math.abs(srcvy);
           }
-          else if (srcvy > 0 && (options.height - (srcy + srcvy)) < srch) {
+          else if (srcvy > 0 && (vpheight - (srcy + srcvy)) < srch) {
             srcvy = +(-(srcvy));
           }
         }
@@ -220,6 +175,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
         srcx += +srcvx;
         srcy += +srcvy;
+        srca = +float_theta(+srcvx, +srcvy); // +Math.atan2(srcvy, srcvx);
 
         // save boid state
         nboidsf[isrc] = srcx;
@@ -230,7 +186,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         nboidsf[isrc + 5] = srch;
 
         // draw the boid
-        callback(srcx, srcy, srch, srcw, +Math.atan(srcvx, srcvy));
+        callback(srcx, srcy, srch, srcw, srca, color);
       }
 
       // we are done processing
@@ -526,12 +482,12 @@ function main() {
 
       boids.processFrame(
         { width: canvas.clientWidth, height: canvas.clientHeight },
-        function draw(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0) {
+        function drawBoid(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0, color = 'blue') {
           ctx.save();
           ctx.translate(x, y);
           ctx.rotate(a);
           ctx.beginPath();
-          ctx.fillStyle = 'blue';
+          ctx.fillStyle = color;
           ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();

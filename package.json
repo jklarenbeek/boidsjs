@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "A simple exploration of the boids algoritme",
   "main": "./public/index.js",
-  "files": ["public"],
+  "files": [
+    "public"
+  ],
   "scripts": {
     "start": "rollup -cw",
     "build": "rollup -c"

@@ -16,12 +16,12 @@ function main() {
 
       boids.processFrame(
         { width: canvas.clientWidth, height: canvas.clientHeight },
-        function draw(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0) {
+        function drawBoid(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0, color = 'blue') {
           ctx.save();
           ctx.translate(x, y);
           ctx.rotate(a);
           ctx.beginPath();
-          ctx.fillStyle = 'blue';
+          ctx.fillStyle = color;
           ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
