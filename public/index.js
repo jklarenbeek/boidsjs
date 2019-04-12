@@ -14,6 +14,10 @@ function float_hypot2(dx = 0.0, dy = 0.0) {
   return +(+(+dx * +dx) + +(+dy * +dy));
 }
 
+function float_hypot(dx = 0.0, dy = 0.0) {
+  return +Math.sqrt(+(+(+dx * +dx) + +(+dy * +dy)));
+}
+
 //#region trigonometry
 
 const float_PIx2 = Math.PI * 2; // 6.28318531
@@ -194,7 +198,14 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
       isBuffer1 = buf1 ? false : true;
 
     }
-    paint2(ctx, size, properties, args) {
+    paint(ctx, size, properties, args) {
+
+      // rollup optimization strangness fix
+      const buf1 = isBuffer1;
+
+      // get current buffer
+      const boidsf = buf1 ? boidsfBuffer1 : boidsfBuffer2;
+      
       // the view angle of the boid looking forward.
       const viewAngle = 270 * (Math.PI / 180);
       const minViewAngle = (-viewAngle) / 2; // -viewingAngle / 2
@@ -226,7 +237,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         srcy = boidsf[isrc + 1]; // y position
         srcvx = boidsf[isrc + 2]; // speed x-axis
         srcvy = boidsf[isrc + 3]; // speed y-axis
-        srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
+        srcrad = boidsf[isrc + 5]; // radius (TODO: radius-x and radius-y)
         // get angle of source boid in radians
         const srctheta = +Math.atan2(srcvy, srcvx);
         const srcmag = +float_hypot(srcvx, srcvy);
@@ -250,8 +261,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
             const dsty = boidsf[idst + 1];
             const dstvx = boidsf[idst + 2];
             const dstvy = boidsf[idst + 3];
-            const dstrad = boidsf[idst + 4];
-            const dstmag = +float_hypot(dstvx, dstvy);
+            const dstrad = boidsf[idst + 5];
 
             // calculate basic distance
             const ldmin = srcrad + dstrad;
@@ -266,16 +276,6 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
               
               // collision detection
               if (euc2d < ldmin) { // TODO: mass and velocity is not correctly transfered.
-                const angle = Math.atan2(ldy, ldx);
-                const tx = (Math.cos(angle) * ldmin * 1.0003);
-                const ty = (Math.sin(angle) * ldmin * 1.0003);
-                const sdx = (dstx - (srcx + tx));
-                const sdy = (dsty - (srcy + ty));
-                const ddx = (srcx - (dstx + tx));
-                const ddy = (srcy - (dsty + ty));
-                const vx = ((dstrad - srcrad) * sdx + (dstrad + dstrad) * ddx) / ldmin;
-                const vy = ((dstrad - srcrad) * sdy + (dstrad + dstrad) * ddy) / ldmin;
-                const hyp = float_hypot(vx, vy);
                 //rule4vx += (vx / hyp) / Math.PI;
                 //rule4vy += (vy / hyp) / Math.PI;
                 rule4vx += (lux * -1) * 0.853;
@@ -412,7 +412,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         boidsf[isrc + 1] = srcy;
         boidsf[isrc + 2] = srcvx;
         boidsf[isrc + 3] = srcvy;
-        boidsf[isrc + 4] = srcrad;
+        boidsf[isrc + 5] = srcrad;
 
         //#region draw boid
         if (rule4cnt > 0) ctx.fillStyle = 'red';
@@ -475,25 +475,7 @@ function main() {
     requestAnimationFrame(draw);
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    {
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-
-      boids.processFrame(
-        { width: canvas.clientWidth, height: canvas.clientHeight },
-        function drawBoid(x = 0.0, y = 0.0, w = 0.0, h = 0.0, a = 0.0, color = 'blue') {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(a);
-          ctx.beginPath();
-          ctx.fillStyle = color;
-          ctx.ellipse(0, 0, w, h, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
-      );
-    }
+    boids.paint(ctx, { width: canvas.clientWidth, height: canvas.clientHeight });
   });
 }
 

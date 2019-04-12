@@ -1,4 +1,4 @@
-import { float_sqrt, float_hypot2, float_dot, float_theta } from 'futilsjs';
+import { float_sqrt, float_hypot2, float_hypot, float_dot, float_theta } from 'futilsjs';
 
 export class Boids {
 }
@@ -237,7 +237,14 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
       isBuffer1 = buf1 ? false : true;
 
     }
-    paint2(ctx, size, properties, args) {
+    paint(ctx, size, properties, args) {
+
+      // rollup optimization strangness fix
+      const buf1 = isBuffer1;
+
+      // get current buffer
+      const boidsf = buf1 ? boidsfBuffer1 : boidsfBuffer2;
+      
       // the view angle of the boid looking forward.
       const viewAngle = 270 * (Math.PI / 180);
       const minViewAngle = (-viewAngle) / 2; // -viewingAngle / 2
@@ -269,7 +276,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         srcy = boidsf[isrc + 1]; // y position
         srcvx = boidsf[isrc + 2]; // speed x-axis
         srcvy = boidsf[isrc + 3]; // speed y-axis
-        srcrad = boidsf[isrc + 4]; // radius (TODO: radius-x and radius-y)
+        srcrad = boidsf[isrc + 5]; // radius (TODO: radius-x and radius-y)
         // get angle of source boid in radians
         const srctheta = +Math.atan2(srcvy, srcvx);
         const srcmag = +float_hypot(srcvx, srcvy);
@@ -293,7 +300,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
             const dsty = boidsf[idst + 1];
             const dstvx = boidsf[idst + 2];
             const dstvy = boidsf[idst + 3];
-            const dstrad = boidsf[idst + 4];
+            const dstrad = boidsf[idst + 5];
             const dsttheta = +Math.atan2(dstvy, dstvx);
             const dstmag = +float_hypot(dstvx, dstvy);
 
@@ -480,7 +487,7 @@ export default function createBoids(viewport = {}, boidCount = 52, maxSize = 254
         boidsf[isrc + 1] = srcy;
         boidsf[isrc + 2] = srcvx;
         boidsf[isrc + 3] = srcvy;
-        boidsf[isrc + 4] = srcrad;
+        boidsf[isrc + 5] = srcrad;
 
         //#region draw boid
         if (rule4cnt > 0) ctx.fillStyle = 'red';

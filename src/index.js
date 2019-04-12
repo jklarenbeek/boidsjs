@@ -9,7 +9,7 @@ function main() {
     requestAnimationFrame(draw);
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
-    if (true) {
+    if (false) {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.beginPath();
