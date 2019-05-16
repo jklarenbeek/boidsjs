@@ -1,32 +1,41 @@
-const int_MULTIPLIER = 10000;
+const mathi32_MULTIPLIER = 10000;
 
-//#region trigonometry
+const mathi32_abs = Math.abs;
 
-const int_PI = (Math.PI * int_MULTIPLIER)|0;
-const int_PI_A = ((4 / Math.PI) * int_MULTIPLIER)|0;
-const int_PI_B = ((4 / (Math.PI * Math.PI)) * int_MULTIPLIER)|0;
+const mathi32_PI = (Math.PI * mathi32_MULTIPLIER)|0;
+const mathi32_PI41 = ((4 / Math.PI) * mathi32_MULTIPLIER)|0;
+const mathi32_PI42 = ((4 / (Math.PI * Math.PI)) * mathi32_MULTIPLIER)|0;
 
-const def_vec2i = Object.seal({ x: 0, y: 0 });
-const def_vec2f = Object.seal({ x: 0.0, y: 0.0 });
-const def_vec3f = Object.seal({ x: 0.0, y: 0.0, z: 0.0 });
+const mathf64_abs = Math.abs;
 
-function float_hypot2(dx = 0.0, dy = 0.0) {
-  return +(+(+dx * +dx) + +(+dy * +dy));
+const mathf64_sqrt = Math.sqrt;
+const mathf64_sin = Math.sin;
+const mathf64_cos = Math.cos;
+const mathf64_atan2 = Math.atan2;
+const mathf64_asin = Math.asin;
+const mathf64_max = Math.max;
+
+const mathf64_random = Math.random;
+
+const mathf64_PI = +Math.PI;
+
+let random_seed = mathi32_abs(performance.now() ^ (+mathf64_random() * Number.MAX_SAFE_INTEGER));
+
+class vec2i32 {
+  constructor(x = 0, y = 0) {
+    this.x = x|0;
+    this.y = y|0;
+  }
 }
 
-function float_hypot(dx = 0.0, dy = 0.0) {
-  return +Math.sqrt(+(+(+dx * +dx) + +(+dy * +dy)));
+const def_vec2i32 = Object.freeze(Object.seal(new vec2i32()));
+
+function float64_hypot(dx = 0.0, dy = 0.0) {
+  return +mathf64_sqrt(+(+(+dx * +dx) + +(+dy * +dy)));
 }
 
-//#region trigonometry
-
-const float_PIx2 = Math.PI * 2; // 6.28318531
-const float_PIh = Math.PI / 2; // 1.57079632
-const float_PI_A = 4 / Math.PI; // 1.27323954
-const float_PI_B = 4 / (Math.PI * Math.PI); // 0.405284735
-
-function float_theta(x = 0.0, y = 0.0) {
-  return +Math.atan2(+y, +x);
+function float64_theta(x = 0.0, y = 0.0) {
+  return +mathf64_atan2(+y, +x);
   /*
     // alternative was faster, but not anymore.
     // error < 0.005
@@ -55,25 +64,310 @@ function float_theta(x = 0.0, y = 0.0) {
   */
 }
 
+/* eslint-disable one-var-declaration-per-line */
+
+class vec2f64 {
+  constructor(x = 0.0, y = 0.0) {
+    this.x = +x;
+    this.y = +y;
+  }
+}
+
+//#region -- object oriented implementation --
+
+//#region class pure primitive vector operators
+
+vec2f64.prototype.neg = function _vec2f64__neg() {
+  return new vec2f64(+(-(+this.x)), +(-(+this.y)));
+};
+
+vec2f64.prototype.add = function _vec2f64__add(vector = def_vec2f64) {
+  return new vec2f64(+(+this.x + +vector.x), +(+this.y + +vector.y));
+};
+vec2f64.prototype.adds = function _vec2f64__adds(scalar = 0.0) {
+  return new vec2f64(+(+this.x + +scalar), +(+this.y + +scalar));
+};
+
+vec2f64.prototype.sub = function _vec2f64__sub(vector = def_vec2f64) {
+  return new vec2f64(+(+this.x - +vector.x), +(+this.y - +vector.y));
+};
+vec2f64.prototype.subs = function _vec2f64__subs(scalar = 0.0) {
+  return new vec2f64(+(+this.x - +scalar), +(+this.y - +scalar));
+};
+
+vec2f64.prototype.mul = function _vec2f64__mul(vector = def_vec2f64) {
+  return new vec2f64(+(+this.x * +vector.x), +(+this.y * +vector.y));
+};
+vec2f64.prototype.muls = function _vec2f64__muls(scalar = 0.0) {
+  return new vec2f64(+(+this.x * +scalar), +(+this.y * +scalar));
+};
+
+vec2f64.prototype.div = function _vec2f64__div(vector = def_vec2f64) {
+  return new vec2f64(+(+this.x / +vector.x), +(+this.y / +vector.y));
+};
+vec2f64.prototype.divs = function _vec2f64__divs(scalar = 0.0) {
+  return new vec2f64(+(+this.x / +scalar), +(+this.y / +scalar));
+};
+
+//#endregion
+
+//#region class impure primitive vector operators
+vec2f64.prototype.ineg = function _vec2f64__ineg() {
+  this.x = +(-(+this.x));
+  this.y = +(-(+this.y));
+  return this;
+};
+
+vec2f64.prototype.iadd = function _vec2f64__iadd(vector = def_vec2f64) {
+  this.x += +vector.x;
+  this.y += +vector.y;
+  return this;
+};
+vec2f64.prototype.iadds = function _vec2f64__iadds(value = 0.0) {
+  this.x += +value;
+  this.y += +value;
+  return this;
+};
+
+vec2f64.prototype.isub = function _vec2f64__isub(vector = def_vec2f64) {
+  this.x -= +vector.x;
+  this.y -= +vector.y;
+  return this;
+};
+vec2f64.prototype.isubs = function _vec2f64__isubs(value = 0.0) {
+  this.x -= +value;
+  this.y -= +value;
+  return this;
+};
+
+vec2f64.prototype.imul = function _vec2f64__imul(vector = def_vec2f64) {
+  this.x *= +vector.x;
+  this.y *= +vector.y;
+  return this;
+};
+vec2f64.prototype.imuls = function _vec2f64__imuls(value = 0.0) {
+  this.x *= +value;
+  this.y *= +value;
+  return this;
+};
+
+vec2f64.prototype.idiv = function _vec2f64__idiv(vector = def_vec2f64) {
+  this.x /= +vector.x;
+  this.y /= +vector.y;
+  return this;
+};
+vec2f64.prototype.idivs = function _vec2f64__idivs(value = 0.0) {
+  this.x /= +value;
+  this.y /= +value;
+  return this;
+};
+
+//#endregion
+
+//#region class vector products
+vec2f64.prototype.mag2 = function _vec2f64__mag2() {
+  return +(+(+this.x * +this.x) + +(+this.y * +this.y));
+};
+vec2f64.prototype.mag = function _vec2f64__mag() {
+  return +mathf64_sqrt(+this.mag2());
+};
+
+vec2f64.prototype.dot = function _vec2f64__dot(vector = def_vec2f64) {
+  return +(+(+this.x * +vector.x) + +(+this.y * +vector.y));
+};
+
+/**
+ * Returns the cross-product of two vectors
+ *
+ * @param {vec2f64} vector B
+ * @returns {double} The cross product of two vectors
+ */
+vec2f64.prototype.cross = function _vec2f64__cross(vector = def_vec2f64) {
+  return +(+(+this.x * +vector.y) - +(+this.y * +vector.x));
+};
+
+/**
+ * Returns the cross-product of three vectors
+ *
+ * You can determine which side of a line a point is on
+ * by converting the line to hyperplane form (implicitly
+ * or explicitly) and then computing the perpendicular
+ * (pseudo)distance from the point to the hyperplane.
+ *
+ * With the crossproduct of two vectors A and B being the vector
+ *
+ * AxB = (AyBz − AzBy, AzBx − AxBz, AxBy − AyBx)
+ * with Az and Bz being zero you are left with the third component of that vector
+ *
+ *    AxBy - AyBx
+ *
+ * With A being the vector from point a to b, and B being the vector from point a to c means
+ *
+ *    Ax = (b[x]-a[x])
+ *    Ay = (b[y]-a[y])
+ *    Bx = (c[x]-a[x])
+ *    By = (c[y]-a[y])
+ *
+ * giving
+ *
+ *    AxBy - AyBx = (b[x]-a[x])*(c[y]-a[y])-(b[y]-a[y])*(c[x]-a[x])
+ *
+ * which is a scalar, the sign of that scalar will tell you wether point c
+ * lies to the left or right of vector ab
+ *
+ * @param {vec2f64} vector B
+ * @param {vec2f64} vector C
+ * @returns {double} The cross product of three vectors
+ *
+ */
+vec2f64.prototype.cross3 = function _vec2f64__cross3(vector2 = def_vec2f64, vector3 = def_vec2f64) {
+  return +(
+    +(+(+vector2.x - +this.x) * +(+vector3.y - +this.y))
+    - +(+(+vector2.y - +this.y) * +(+vector3.x - +this.x)));
+};
+
+/**
+ * Returns the angle in radians of its vector
+ *
+ * Math.atan2(dy, dx) === Math.asin(dy/Math.sqrt(dx*dx + dy*dy))
+ *
+ * @param {} v Vector
+ */
+function _vec2f64__theta() {
+  return +mathf64_atan2(+this.y, +this.x);
+}
+vec2f64.prototype.theta = _vec2f64__theta;
+vec2f64.prototype.angle = _vec2f64__theta;
+vec2f64.prototype.phi = function _vec2__phi() {
+  return +mathf64_asin(+this.y / +this.mag());
+};
+
+//#endregion
+
+//#region class pure advanced vector functions
+vec2f64.prototype.unit = function _vec2f64__unit() {
+  return this.divs(+this.mag());
+};
+
+vec2f64.prototype.rotn90 = function _vec2f64__rotn90() {
+  return new vec2f64(+this.y, +(-(+this.x)));
+};
+function _vec2f64__rot90() {
+  return new vec2f64(+(-(+this.y)), +this.x);
+}
+vec2f64.prototype.rot90 = _vec2f64__rot90;
+vec2f64.prototype.perp = _vec2f64__rot90;
+
+/**
+ * Rotates a vector by the specified angle in radians
+ *
+ * @param {float} r  angle in radians
+ * @returns {vec2f64} transformed output vector
+ */
+vec2f64.prototype.rotate = function _vec2f64__rotate(radians = 0.0) {
+  return new vec2f64(
+    +(+(+this.x * +mathf64_cos(+radians)) - +(+this.y * +mathf64_sin(+radians))),
+    +(+(+this.x * +mathf64_sin(+radians)) + +(+this.y * +mathf64_cos(+radians))),
+  );
+};
+vec2f64.prototype.about = function _vec2f64__about(vector = def_vec2f64, radians = 0.0) {
+  return new vec2f64(
+    +(+vector.x + +(+(+(+this.x - +vector.x) * +mathf64_cos(+radians))
+      - +(+(+this.y - +vector.y) * +mathf64_sin(+radians)))),
+    +(+vector.y + +(+(+(+this.x - +vector.x) * +mathf64_sin(+radians))
+      + +(+(+this.y - +vector.y) * +mathf64_cos(+radians)))),
+  );
+};
+
+//#endregion
+
+//#region class impure advanced vector functions
+vec2f64.prototype.iunit = function _vec2f64__iunit() {
+  return this.idivs(+this.mag());
+};
+
+vec2f64.prototype.irotn90 = function _vec2f64__irotn90() {
+  this.x = +this.y;
+  this.y = +(-(+this.x));
+  return this;
+};
+function _vec2f64__irot90() {
+  this.x = +(-(+this.y));
+  this.y = +this.x;
+  return this;
+}
+vec2f64.prototype.irot90 = _vec2f64__irot90;
+vec2f64.prototype.iperp = _vec2f64__irot90;
+
+vec2f64.prototype.irotate = function _vec2f64__irotate(radians = 0.0) {
+  this.x = +(+(+this.x * +mathf64_cos(+radians)) - +(+this.y * +mathf64_sin(+radians)));
+  this.y = +(+(+this.x * +mathf64_sin(+radians)) + +(+this.y * +mathf64_cos(+radians)));
+  return this;
+};
+vec2f64.prototype.iabout = function _vec2f64__iabout(vector = def_vec2f64, radians = 0.0) {
+  this.x = +(+vector.x + +(+(+(+this.x - +vector.x) * +mathf64_cos(+radians))
+    - +(+(+this.y - +vector.y) * +mathf64_sin(+radians))));
+  this.y = +(+vector.y + +(+(+(+this.x - +vector.x) * +mathf64_sin(+radians))
+    + +(+(+this.y - +vector.y) * +mathf64_cos(+radians))));
+  return this;
+};
+
+//#endregion
+
+//#endregion
+
+const def_vec2f64 = Object.freeze(Object.seal(vec2f64_new()));
+function vec2f64_new(x = 0.0, y = 0.0) { return new vec2f64(+x, +y); }
+
+class vec3f64 {
+  constructor(x = 0.0, y = 0.0, z = 0.0) {
+    if (x instanceof vec2f64) {
+      this.x = +x.x;
+      this.y = +x.y;
+      this.z = +y;
+    }
+    else {
+      this.x = +x;
+      this.y = +y;
+      this.z = +z;
+    }
+  }
+}
+
+const def_vec3f64 = Object.freeze(Object.seal(vec3f64_new()));
+
+//#endregion
+
+function vec3f64_new(x = 0.0, y = 0.0, z = 0.0) { return new vec3f64(+x, +y, +z); }
+
+const workletState = Object.freeze(Object.seal({
+  init: 0,
+  loading: 1,
+  preparing: 2,
+  running: 3,
+  exiting: 4,
+  ended: 5,
+}));
+
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
-const CONST_DEFAULT_SPEED_LIMIT = Math.PI / 3;
+const CONST_DEFAULT_SPEED_LIMIT = mathf64_PI / 3;
 
 function initBoidsf(boidsf, count, size, viewport) {
 
   // init boids randomly
   for (let isrc = 0; isrc < count * size; isrc += size) {
     // x-position
-    boidsf[isrc] = Math.random() * viewport.width; // srcx
+    boidsf[isrc] = +mathf64_random() * viewport.width; // srcx
     // y-position
-    boidsf[isrc + 1] = Math.random() * viewport.height; // srcy
+    boidsf[isrc + 1] = mathf64_random() * viewport.height; // srcy
     // x-velocity
-    boidsf[isrc + 2] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    boidsf[isrc + 2] = +mathf64_sin(mathf64_random() * mathf64_PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
     // y-velocity
-    boidsf[isrc + 3] = +Math.sin(Math.random() * Math.PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+    boidsf[isrc + 3] = +mathf64_sin(mathf64_random() * mathf64_PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
     // angle in unsigned radians
-    boidsf[isrc + 4] = (Math.random() * Math.PI * 2) - Math.PI;
+    boidsf[isrc + 4] = (mathf64_random() * mathf64_PI * 2) - mathf64_PI;
     // unsigned radiusX or width
-    boidsf[isrc + 5] = +Math.max(3, Math.abs(Math.sin((Math.random() * Math.PI * 2) - Math.PI)) * CONST_DEFAULT_BOID_RADIUS);
+    boidsf[isrc + 5] = +mathf64_max(3, mathf64_abs(mathf64_sin((mathf64_random() * mathf64_PI * 2) - mathf64_PI)) * CONST_DEFAULT_BOID_RADIUS);
     boidsf[isrc + 6] = 0;
   }
 }
@@ -96,7 +390,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
       const vpwidth = options.width|0;
       const vpheight = options.height|0;
       
-      // rollup optimization strangness fix
+      // rollup optimization strangeness fix
       const buf1 = isBuffer1;
 
       // get current buffer
@@ -120,32 +414,16 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         srcw = +(srch / 2.0);  // width/radiusX
         color = 'blue';
 
-        // iterate through other boids
-        for (let ioth = 0; ioth < boidCount * structSize; ioth += structSize) {
-          if (ioth !== isrc) {
-            const othh = +cboidsf[ioth + 5]; // height/radiusY
-            const othw = +(othh / 2.0); // width/radiusX
-
-            // compute minimum distance from each other
-            const minwidth = +(srcw + othw);
-            const minheight = +(srch + othh);
-            const mindist2 = +float_hypot2(minwidth, minheight);
-
-            // define maximum distance for entering branch
-            const maxdist = +(+mindist2 + +(Math.PI * Math.PI));
-          }
-        }
-
         // cage the boid to the outer rectangle
         {
-          const maxx = +(+srch * +(Math.PI * Math.PI));
+          const maxx = +(+srch * +(mathf64_PI * mathf64_PI));
           const newx = +(+srcx + +srcvx);
           if (srcvx < 0) {
             const rdistx = +(+maxx - +newx);
             if (+rdistx > 0) {
               const distx = +(maxx - rdistx);
               if (+distx < +srch)
-                srcvx = +Math.abs(srcvx);
+                srcvx = +mathf64_abs(srcvx);
               else {
                 color = 'red';
                 //const t = +(distx / maxx);
@@ -167,19 +445,19 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
             }
           }
           if (srcvy < 0 && (srcy + srcvy) < srch) {
-            srcvy = +Math.abs(srcvy);
+            srcvy = +mathf64_abs(srcvy);
           }
           else if (srcvy > 0 && (vpheight - (srcy + srcvy)) < srch) {
             srcvy = +(-(srcvy));
           }
         }
 
-        //const srcvx = Math.cos(newangle) * newmag;
-        //const srcvy = Math.sin(newangle) * newmag;
+        //const srcvx = mathf64_cos(newangle) * newmag;
+        //const srcvy = mathf64_sin(newangle) * newmag;
 
         srcx += +srcvx;
         srcy += +srcvy;
-        srca = +float_theta(+srcvx, +srcvy); // +Math.atan2(srcvy, srcvx);
+        srca = +float64_theta(+srcvx, +srcvy); // +mathf64_atan2(srcvy, srcvx);
 
         // save boid state
         nboidsf[isrc] = srcx;
@@ -207,7 +485,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
       const boidsf = buf1 ? boidsfBuffer1 : boidsfBuffer2;
       
       // the view angle of the boid looking forward.
-      const viewAngle = 270 * (Math.PI / 180);
+      const viewAngle = 270 * (mathf64_PI / 180);
       const minViewAngle = (-viewAngle) / 2; // -viewingAngle / 2
       const maxViewAngle = (+viewAngle) / 2; // +viewingAngle / 2
 
@@ -239,8 +517,8 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         srcvy = boidsf[isrc + 3]; // speed y-axis
         srcrad = boidsf[isrc + 5]; // radius (TODO: radius-x and radius-y)
         // get angle of source boid in radians
-        const srctheta = +Math.atan2(srcvy, srcvx);
-        const srcmag = +float_hypot(srcvx, srcvy);
+        const srctheta = +mathf64_atan2(srcvy, srcvx);
+        const srcmag = +float64_hypot(srcvx, srcvy);
 
         // reset separation rule
         rule1cnt = 0; rule1vx = 0.0; rule1vy = 0.0;
@@ -267,7 +545,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
             const ldmin = srcrad + dstrad;
             const ldx = dstx - srcx;
             const ldy = dsty - srcy;
-            const euc2d = +float_hypot(ldx, ldy);
+            const euc2d = +float64_hypot(ldx, ldy);
             const lux = ldx / euc2d;
             const luy = ldy / euc2d;
 
@@ -276,26 +554,26 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
               
               // collision detection
               if (euc2d < ldmin) { // TODO: mass and velocity is not correctly transfered.
-                //rule4vx += (vx / hyp) / Math.PI;
-                //rule4vy += (vy / hyp) / Math.PI;
-                rule4vx += (lux * -1) * 0.853;
-                rule4vy += (luy * -1) * 0.853;
+                //rule4vx += (vx / hyp) / mathf64_PI;
+                //rule4vy += (vy / hyp) / mathf64_PI;
+                rule4vx += +((lux * -1) * 0.853);
+                rule4vy += +((luy * -1) * 0.853);
                 rule4cnt++;
                 //continue;
               }
 
               // view angle detection
               const spdy = (size.height - dsty) - (size.height - srcy);
-              const spx = ldx * Math.cos(srctheta) - spdy * Math.sin(srctheta);
-              const spy = ldx * Math.sin(srctheta) + spdy * Math.cos(srctheta);
+              const spx = ldx * mathf64_cos(srctheta) - spdy * mathf64_sin(srctheta);
+              const spy = ldx * mathf64_sin(srctheta) + spdy * mathf64_cos(srctheta);
           
-              const spa = Math.atan2(-spy, spx);
+              const spa = mathf64_atan2(-spy, spx);
           
               // within view? apply flocking rules
               if (spa < maxViewAngle && spa > minViewAngle) {
-                //const angle = Math.atan2(ldy, ldx);
-                //const tx = (Math.cos(angle) * ldmin * 1.0003);
-                //const ty = (Math.sin(angle) * ldmin * 1.0003);
+                //const angle = mathf64_atan2(ldy, ldx);
+                //const tx = (mathf64_cos(angle) * ldmin * 1.0003);
+                //const ty = (mathf64_sin(angle) * ldmin * 1.0003);
                 //const sdx = (dstx - (srcx + tx));
                 //const sdy = (dsty - (srcy + ty));
                 //const ddx = (srcx - (dstx + tx));
@@ -312,7 +590,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
 
               // alignment
               // TODO: add weights to its size.
-              const dstmag = float_hypot(dstvx, dstvy);
+              const dstmag = float64_hypot(dstvx, dstvy);
               rule2vx += (dstvx / dstmag);
               rule2vy += (dstvy / dstmag);
               rule2cnt++;
@@ -355,9 +633,9 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
             // cohesion
             const vx = ((rule3x / rule3cnt) - srcx);
             const vy = ((rule3y / rule3cnt) - srcy);
-            const nm = float_hypot(vx, vy);
-            rulesvx += (srcvx + (vx / nm)) / Math.PI;
-            rulesvy += (srcvy + (vy / nm)) / Math.PI;
+            const nm = float64_hypot(vx, vy);
+            rulesvx += (srcvx + (vx / nm)) / mathf64_PI;
+            rulesvy += (srcvy + (vy / nm)) / mathf64_PI;
             rulescnt++;
           }
           if (rule4cnt > 0) {
@@ -369,8 +647,8 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
           if (rulescnt > 0) {
             rulesvx /= rulescnt;
             rulesvy /= rulescnt;
-            srcvx += (rulesvx);// * 0.03; // / (Math.PI * Math.PI));
-            srcvy += (rulesvy);// * 0.03; // / (Math.PI * Math.PI));
+            srcvx += (rulesvx);// * 0.03; // / (mathf64_PI * mathf64_PI));
+            srcvy += (rulesvy);// * 0.03; // / (mathf64_PI * mathf64_PI));
           }
         }
 
@@ -379,7 +657,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         //#region limit source boid
 
         // limit speed of boid
-        const newmag = +float_hypot(srcvx, srcvy);
+        const newmag = +float64_hypot(srcvx, srcvy);
         if (newmag > CONST_DEFAULT_SPEED_LIMIT) {
           srcvx = (srcvx / newmag) * CONST_DEFAULT_SPEED_LIMIT;
           srcvy = (srcvy / newmag) * CONST_DEFAULT_SPEED_LIMIT;
@@ -388,13 +666,13 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         // cage boid to outer rectangle
         {
           if (srcvx < 0 && (srcx + srcvx) < srcrad) {
-            srcvx = Math.abs(srcvx);
+            srcvx = +mathf64_abs(srcvx);
           }
           else if (srcvx > 0 && (size.width - (srcx + srcvx)) < srcrad) {
             srcvx = -(srcvx);
           }
           if (srcvy < 0 && (srcy + srcvy) < srcrad) {
-            srcvy = Math.abs(srcvy);
+            srcvy = +mathf64_abs(srcvy);
           }
           else if (srcvy > 0 && (size.height - (srcy + srcvy)) < srcrad) {
             srcvy = -(srcvy);
@@ -424,7 +702,7 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         ctx.save();
 
         ctx.translate(srcx, srcy);
-        ctx.rotate(Math.atan2(srcvy, srcvx));
+        ctx.rotate(mathf64_atan2(srcvy, srcvx));
   
         ctx.beginPath();
 
@@ -440,8 +718,8 @@ function createBoids(viewport = {}, boidCount = 52, maxSize = 254) {
         // ctx.fill();
 
         //ctx.moveTo(srcx, srcy);
-        //ctx.arc(0, 0, srcrad, 0, 2 * Math.PI, false);
-        ctx.ellipse(0, 0, srcrad, srcrad / 2, 0, 0, Math.PI * 2);
+        //ctx.arc(0, 0, srcrad, 0, 2 * mathf64_PI, false);
+        ctx.ellipse(0, 0, srcrad, srcrad / 2, 0, 0, mathf64_PI * 2);
         ctx.fill();
         //ctx.moveTo(srcx, srcy);
         //ctx.lineTo(rule1vx, rule1vy);
