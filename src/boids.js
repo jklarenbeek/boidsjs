@@ -14,8 +14,120 @@ import {
   float64_theta
 } from 'futilsjs';
 
-export class Boids {
+// "https://github.com/lovasoa/expectation-maximization"
+
+const CONST_DEFAULT_BOID_RADIUS = 21.5;
+const CONST_DEFAULT_SPEED_LIMIT = mathf64_PI / 3;
+
+const CONST_DEFAULT_BOID_STRUCT_SIZE = 8;
+
+class Boids  {
+  static createArray(capacity, arrayType = Array) {
+    return new arrayType(CONST_DEFAULT_BOID_STRUCT_SIZE * array.length);
+  }
+
+  constructor(array) {
+    this._data = array
+    this._capacity = array.length / CONST_DEFAULT_BOID_STRUCT_SIZE;
+    this._pointer = 0;
+  }
+
+  get data() { return this._data; }
+  get pointer() { return this._pointer; }
+  set pointer(value) { this._pointer = value; }
+
+  capacity() { return this._capacity; }
+  current() { return this.pointer / CONST_DEFAULT_BOID_STRUCT_SIZE; }
+
+  reset() { this.pointer = 0; }
+  next() { this.pointer += CONST_DEFAULT_BOID_STRUCT_SIZE; }
+  isLast() { return this.pointer >= this.data.length; }
+
+  get x() { this.data[this.pointer + 0]; }
+  get y() { this.data[this.pointer + 1]; }
+  get vx() { this.data[this.pointer + 2]; }
+  get vy() { this.data[this.pointer + 3]; }
+  get angle() { this.data[this.pointer + 4]; }
+  get width() { this.data[this.pointer + 5]; }
+  get height() { this.data[this.pointer + 6]; }
+  get mass() { this.data[this.pointer + 7]; }
+
+  set x(value) { this.data[this.pointer + 0] = value; }
+  set y(value) { this.data[this.pointer + 1] = value; }
+  set vx(value) { this.data[this.pointer + 2] = value; }
+  set vy(value) { this.data[this.pointer + 3] = value; }
+  set angle(value) { this.data[this.pointer + 4] = value; }
+  set width(value) { this.data[this.pointer + 5] = value; }
+  set height(value) { this.data[this.pointer + 6] = value; }
+  set mass(value) { this.data[this.pointer + 7] = value; }
+
+  init(viewport) {
+    for (this.reset(); !this.isLast(); this.next()) {
+      this.x = mathf64_random() * viewport.width;
+      this.y = mathf64_random() * viewport.height; 
+      this.vx = mathf64_sin(mathf64_random() * mathf64_PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+      this.vy = mathf64_sin(mathf64_random() * mathf64_PI * 2) * CONST_DEFAULT_SPEED_LIMIT;
+      this.angle = (mathf64_random() * mathf64_PI * 2) - mathf64_PI;
+      // unsigned radiusX or width
+      this.height = mathf64_max(3, mathf64_abs(mathf64_sin((mathf64_random() * mathf64_PI * 2) - mathf64_PI)) * CONST_DEFAULT_BOID_RADIUS);
+      this.width = this.height / 2;
+      this.mass = this.height * this.width * 0.639;
+    }
+  }
+
+  process(viewport, callback) {
+    const other = new Boids(this.data);
+    for (this.reset(); !this.isLast(); this.next()) {
+      for (other.reset(); !other.isLast(); other.next()) {
+        // compute distance from each other
+        const distx = this.x - other.x;
+        const disty = this.y - other.y;
+        const dist2 = float64_hypot2(distx, disty);
+
+        // compute minimum distance from each other
+        const minwidth = this.width + other.width;
+        const minheight = this.height + other.height;
+        const mindist2 = float64_hypot2(minwidth, minheight);
+
+        // separate when to close
+        if (dist2 < mindist2) {
+          const dist = float64_sqrt(dist2);
+          // compute unit vector normal and tangent vectors
+          const unx = +(distx / dist); // unit normal vector x
+          const uny = +(disty / dist); // unit normal vector y
+          // vec2f_rotn90
+          const utx = +(-uny); // unit tangent vector x
+          const uty = +(unx); // unit tangent vector y
+          // compute scalar projection of velocities
+          const svn = float64_dot(unx, uny, this.vx, this.vy);
+          const svt = float64_dot(utx, uty, this.vx, this.vy);
+          const ovn = float64_dot(unx, uny, other.vx, other.vy);
+          // - const ovt = +float64_dot(utx, uty, other.vx, other.vy);
+          // compute new velocity using 1 dimension
+          const svp = +((svn * (this.mass - other.mass) + 2.0 * other.mass * ovn) / (this.mass + other.mass));
+          // - const ovp = +((ovn * (other.mass - this.mass) + 2.0 * this.mass * svn) / (this.mass + other.mass));
+          // compute new normal and tangent velocity vectors
+          const nnx = +(svp * unx); // nnv = unv * svp
+          const nny = +(svp * uny);
+          const ntx = +(svt * utx); // ntv = utv * svt;
+          const nty = +(svt * uty);
+          const nvx = +(nnx + ntx); // nvv = ntv + nnv;
+          const nvy = +(nny + nty);
+          // compute weights relative to distance
+          const reldist = 1.0; // +(1.0 / (+mathf64_abs(distance - mindist) + 1.0)); 
+          rule1vx += +(nvx * reldist);
+          rule1vy += +(nvy * reldist);
+          rule1cnt++;
+        }
+      }
+    }
+  }
+
+  paint(ctx, size, properties, args) {
+    
+  }
 }
+
 
 const CONST_DEFAULT_BOID_RADIUS = 21.5;
 const CONST_DEFAULT_SPEED_LIMIT = mathf64_PI / 3;
